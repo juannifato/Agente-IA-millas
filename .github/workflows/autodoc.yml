@@ -1,0 +1,103 @@
+name: Auto-Bitacora (IA)
+
+# Se dispara en cada push a main.
+# Ignora los cambios sobre la bitacora para no entrar en un bucle infinito.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'Bitacora_Construccion.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: autodoc-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  documentar:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip bitacora]')"
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Redactar resumen tecnico con Llama 3 (Groq)
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: llama-3.3-70b-versatile
+        run: |
+          set -euo pipefail
+
+          # ---- 1. Datos del commit ----
+          MENSAJE="$(git log -1 --pretty=%B)"
+          SHA="$(git rev-parse --short HEAD)"
+          AUTOR="$(git log -1 --pretty=%an)"
+          FECHA="$(TZ=America/Argentina/Buenos_Aires date '+%d/%m/%Y %H:%M')"
+
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            CAMBIOS="$(git diff --stat HEAD~1 HEAD | tail -n 40)"
+          else
+            CAMBIOS="$(git show --stat --format='' HEAD | tail -n 40)"
+          fi
+
+          # ---- 2. Pedirle el resumen a la IA ----
+          if [ -z "${GROQ_API_KEY:-}" ]; then
+            RESUMEN="(No hay GROQ_API_KEY cargada en los Secrets del repositorio, por eso no se genero resumen automatico.)"
+          else
+            PROMPT="Sos un documentador tecnico. Te paso el mensaje de un commit y la lista de archivos modificados de un proyecto llamado 'Agente Millas IA' (un backend en Node.js que consulta vuelos en millas y los analiza con IA).
+
+          MENSAJE DEL COMMIT:
+          ${MENSAJE}
+
+          ARCHIVOS MODIFICADOS:
+          ${CAMBIOS}
+
+          Redacta en espanol rioplatense un resumen tecnico de 2 a 4 oraciones explicando QUE se construyo o cambio y PARA QUE sirve. Escribi solo el resumen en texto plano, sin titulos, sin vinetas y sin comillas."
+
+            PAYLOAD="$(jq -n \
+              --arg model "$GROQ_MODEL" \
+              --arg prompt "$PROMPT" \
+              '{model:$model, temperature:0.3, max_tokens:400, messages:[{role:"user", content:$prompt}]}')"
+
+            RESPUESTA="$(curl -sS --max-time 60 \
+              -X POST https://api.groq.com/openai/v1/chat/completions \
+              -H "Authorization: Bearer ${GROQ_API_KEY}" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD" || echo '')"
+
+            RESUMEN="$(printf '%s' "$RESPUESTA" | jq -r '.choices[0].message.content // empty')"
+
+            if [ -z "$RESUMEN" ]; then
+              ERROR_MSG="$(printf '%s' "$RESPUESTA" | jq -r '.error.message // "respuesta vacia de la API"')"
+              RESUMEN="(La IA no pudo redactar el resumen: ${ERROR_MSG})"
+            fi
+          fi
+
+          # ---- 3. Escribir la entrada en la bitacora ----
+          {
+            echo "----------------------------------------------------------------"
+            echo "[$FECHA] commit $SHA - $AUTOR"
+            echo "Mensaje: $MENSAJE"
+            echo ""
+            echo "$RESUMEN"
+            echo ""
+          } >> Bitacora_Construccion.txt
+
+      - name: Guardar la bitacora en el repositorio
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Bitacora_Construccion.txt
+          if git diff --cached --quiet; then
+            echo "Sin cambios en la bitacora, no hay nada que commitear."
+            exit 0
+          fi
+          git commit -m "docs: bitacora automatica [skip bitacora]"
+          git push

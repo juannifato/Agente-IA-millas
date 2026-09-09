@@ -1,0 +1,23 @@
+# Secretos - NUNCA subir a GitHub
+.env
+.env.local
+*.key
+
+# Node
+node_modules/
+npm-debug.log*
+package-lock.json.bak
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Visual Studio / VB.NET (Fase 5)
+frontend-vb/**/bin/
+frontend-vb/**/obj/
+frontend-vb/.vs/
+*.user
+
+# Temporales
+*.log
+tmp/
