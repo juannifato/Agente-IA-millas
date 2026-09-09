@@ -19,7 +19,7 @@ Backend Python (Flask) en Render         <-- Fases 3 y 6
 ## Estado de las fases
 
 - [x] **Fase 1** — Entorno, repositorio y auto-bitácora con GitHub Actions
-- [ ] **Fase 2** — Cuentas: Render + Groq, variables de entorno
+- [x] **Fase 2** — Cuentas: Render + Groq, variables de entorno
 - [ ] **Fase 3** — Motor de extracción (API de Aerolíneas Argentinas)
 - [ ] **Fase 4** — Cerebro analítico (Groq)
 - [ ] **Fase 5** — Interfaz de escritorio en Visual Basic
@@ -70,3 +70,35 @@ python app.py
 ```
 
 El archivo `.env` está en `.gitignore` y nunca se sube al repositorio.
+
+## Chequeo del entorno
+
+```powershell
+.\.venv\Scripts\python.exe verificar_setup.py
+```
+
+Valida el `.env`, lista los modelos que habilita la cuenta de Groq y hace una
+generación real. Si algo del entorno se rompe, correr esto primero.
+
+## Notas técnicas (aprendidas a los golpes)
+
+Tres cosas que costaron un rato y conviene no volver a tropezar:
+
+1. **Groq está detrás de Cloudflare.** Pegarle con `urllib` devuelve
+   `403 error code: 1010` porque bloquea el User-Agent `Python-urllib/x.y`.
+   Por eso el proyecto usa `requests` para todas las llamadas HTTP.
+
+2. **`gpt-oss` es un modelo de razonamiento.** Consume tokens "pensando" antes
+   de escribir la respuesta. Con un `max_tokens` bajo se queda sin presupuesto
+   en esa etapa y la API devuelve `json_validate_failed` con `failed_generation`
+   vacío. Se usa `max_tokens` holgado (512+) y `reasoning_effort: "low"`, que
+   para extraer datos de un JSON es suficiente.
+
+3. **`load_dotenv()` sin argumentos no mira el directorio actual**, sino la
+   carpeta del `.py` que lo llama. En un proyecto con módulos en subcarpetas
+   (`/scrapers/`, `/ia/`) eso da falsos negativos: siempre pasarle la ruta
+   explícita del `.env`.
+
+Modelos disponibles en la cuenta gratuita al 09/09/2026: `openai/gpt-oss-120b`,
+`openai/gpt-oss-20b`, `qwen/qwen3.6-27b`, `qwen/qwen3.8-27b`, `groq/compound`,
+`groq/compound-mini`, `allam-2-7b`. Ningún Llama.
