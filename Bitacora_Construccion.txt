@@ -74,3 +74,37 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se añadió el script verificar_setup.py, que valida que el archivo .env esté correctamente cargado, lista los modelos habilitados en la cuenta de Groq y realiza una generación real contra la API para confirmar que la clave funciona y que el modelo openai/gpt-oss-120b responde JSON válido en menos de 0.1 segundo. Además, el README se actualizó con la solución a tres problemas críticos detectados durante la verificación: el rechazo del User‑Agent de urllib por Cloudflare (se debe usar requests), el agotamiento de tokens del modelo gpt‑oss cuando max_tokens es bajo y el comportamiento de load_dotenv que buscaba .env junto al script en vez del directorio actual. Con esto se garantiza que el entorno de desarrollo y la integración con Groq estén listos para la fase 2 del proyecto.
 
+----------------------------------------------------------------
+[09/09/2026 18:34] commit 77f1cf1 - juannifato
+Mensaje: feat: esqueleto del backend Flask con ruteo modular de scrapers
+
+Se levanta la estructura del backend. app.py expone tres endpoints
+que devuelven siempre JSON, incluso en los errores, para que el
+cliente de Visual Basic nunca tenga que parsear HTML: GET /salud
+como chequeo de vida, GET /aerolineas con el catalogo para armar el
+combo de la interfaz, y POST /buscar que valida los datos de entrada
+y delega en el scraper correspondiente.
+
+La validacion de POST /buscar rechaza codigos que no sean IATA de
+tres letras, fechas mal formadas o inexistentes, fechas pasadas y
+origenes iguales al destino, con un motivo corto por error para que
+el frontend pueda reaccionar. Acepta la fecha en DD/MM/AAAA (lo que
+manda Visual Basic) o en ISO, y la normaliza a ISO antes de pasarla
+al scraper.
+
+config.py centraliza la lectura del .env y las constantes. El
+paquete scrapers define en base.py el contrato comun que cumple toda
+aerolinea y en __init__.py un registro que resuelve la clave que
+llega del frontend, con lo que sumar Smiles o American en la Fase 7
+es agregar un modulo y una linea. El extractor de Aerolineas
+Argentinas queda con el manejo de errores completo (timeout, sin
+conexion, 401, 403, 429 y respuestas no JSON) pero sin el endpoint
+real todavia, y avisa con el motivo scraper_sin_implementar.
+
+Probado con 11 casos contra el servidor local: los tres endpoints y
+los ocho errores devuelven el codigo HTTP y el JSON esperados.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se implementó la estructura básica del backend Flask con rutas modulares para los scrapers, exponiendo los endpoints /salud, /aerolineas y /buscar que siempre retornan JSON. Se añadió validación de entrada en /buscar, normalizando fechas y verificando códigos IATA, y se centralizó la configuración en config.py. Además, se definió la arquitectura de los scrapers con un contrato base y registro dinámico, y se implementó el scraper de Aerolíneas Argentinas con manejo completo de errores. Todo esto permite que el cliente Visual Basic consuma la API de forma fiable y facilite la incorporación de nuevas aerolíneas.
+
