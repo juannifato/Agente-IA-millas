@@ -53,3 +53,24 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se migró el backend de Agente Millas IA de Node.js a Python 3.14 usando Flask, añadiendo un entorno virtual con sus dependencias en requirements.txt. También se actualizó .gitignore para excluir .venv y __pycache__, y se modificó el README con las nuevas instrucciones de puesta en marcha en Windows. Con esto el servidor ahora procesa las consultas de vuelos en millas y el análisis con IA bajo el stack Python, facilitando su despliegue y mantenimiento.
 
+----------------------------------------------------------------
+[09/09/2026 18:30] commit 4423896 - juannifato
+Mensaje: feat: script de chequeo de entorno y validacion de la Fase 2
+
+Se agrega verificar_setup.py, que comprueba que el .env este bien
+cargado, lista los modelos habilitados en la cuenta de Groq y hace
+una generacion real contra la API. Confirmado que la clave funciona
+y que openai/gpt-oss-120b esta disponible: responde JSON valido en
+0.08 segundos.
+
+Se documentan en el README tres problemas resueltos durante la
+verificacion: el Cloudflare de Groq rechaza el User-Agent de urllib
+con error 1010 (hay que usar requests), gpt-oss es un modelo de
+razonamiento y se queda sin tokens si max_tokens es bajo (devuelve
+json_validate_failed vacio), y load_dotenv sin argumentos busca el
+.env junto al script en lugar del directorio actual.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se añadió el script verificar_setup.py, que valida que el archivo .env esté correctamente cargado, lista los modelos habilitados en la cuenta de Groq y realiza una generación real contra la API para confirmar que la clave funciona y que el modelo openai/gpt-oss-120b responde JSON válido en menos de 0.1 segundo. Además, el README se actualizó con la solución a tres problemas críticos detectados durante la verificación: el rechazo del User‑Agent de urllib por Cloudflare (se debe usar requests), el agotamiento de tokens del modelo gpt‑oss cuando max_tokens es bajo y el comportamiento de load_dotenv que buscaba .env junto al script en vez del directorio actual. Con esto se garantiza que el entorno de desarrollo y la integración con Groq estén listos para la fase 2 del proyecto.
+
