@@ -33,3 +33,23 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se sustituyó el modelo de IA usado en la bitácora, pasando de llama‑3.3‑70b‑versatile a openai/gpt‑oss‑120b, ya que el modelo anterior quedó fuera del tier gratuito. Además, el workflow ahora lee el modelo a emplear desde la variable de entorno GROQ_MODEL, lo que permite cambiarlo desde la configuración del repositorio sin tocar el código. Se actualizaron el README y el archivo .env.example para reflejar el nuevo modelo y su configuración.
 
+----------------------------------------------------------------
+[09/09/2026 18:15] commit 1a96b8c - juannifato
+Mensaje: chore: pasar el backend de Node.js a Python 3.14 + Flask
+
+Se confirma que el equipo si tiene Python instalado (3.14.0 via el
+launcher py; el comando python estaba tapado por el alias de
+Microsoft Store) y se adopta Python como stack del backend por
+preferencia del usuario.
+
+Se agrega requirements.txt con Flask, requests, python-dotenv y
+gunicorn, todo con versiones fijadas y verificado instalando en un
+entorno virtual local sobre Python 3.14. Se reescribe el .gitignore
+para ignorar .venv y los __pycache__ en lugar de node_modules, y se
+actualiza el README con el stack elegido y las instrucciones de
+puesta en marcha para Windows.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se migró el backend de Agente Millas IA de Node.js a Python 3.14 usando Flask, añadiendo un entorno virtual con sus dependencias en requirements.txt. También se actualizó .gitignore para excluir .venv y __pycache__, y se modificó el README con las nuevas instrucciones de puesta en marcha en Windows. Con esto el servidor ahora procesa las consultas de vuelos en millas y el análisis con IA bajo el stack Python, facilitando su despliegue y mantenimiento.
+
