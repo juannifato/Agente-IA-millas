@@ -1,7 +1,7 @@
 ================================================================
  BITACORA DE CONSTRUCCION - Agente Millas IA
  Este archivo se escribe SOLO. Cada vez que hacés "git push",
- GitHub Actions le pasa tu mensaje de commit a Llama 3 (Groq)
+ GitHub Actions le pasa tu mensaje de commit a la IA de Groq
  y la IA agrega abajo un resumen tecnico de lo que se construyo.
  No hace falta que lo edites a mano.
 ================================================================

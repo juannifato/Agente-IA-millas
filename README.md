@@ -1,6 +1,6 @@
 # Agente Millas IA
 
-Agente que busca pasajes en millas, los analiza con IA (Llama 3 vía Groq) y
+Agente que busca pasajes en millas, los analiza con IA (Groq) y
 devuelve el vuelo más conveniente. Infraestructura 100% gratuita.
 
 ## Arquitectura
@@ -13,7 +13,7 @@ Backend Node.js en Render             <-- Fases 3 y 6
         |
         +--> /scrapers/  consulta la API de la aerolínea  --> JSON crudo
         |
-        +--> /ia/        Groq + Llama 3 analiza y compara --> JSON limpio
+        +--> /ia/        Groq analiza y compara      --> JSON limpio
 ```
 
 ## Estado de las fases
@@ -29,7 +29,7 @@ Backend Node.js en Render             <-- Fases 3 y 6
 ## Auto-bitácora
 
 Cada `git push` a `main` dispara `.github/workflows/autodoc.yml`: toma el mensaje
-del commit y la lista de archivos tocados, se los pasa a Llama 3 en Groq y agrega
+del commit y la lista de archivos tocados, se los pasa al modelo de Groq y agrega
 un resumen técnico a `Bitacora_Construccion.txt`. Requiere el secret
 `GROQ_API_KEY` cargado en el repositorio.
 
