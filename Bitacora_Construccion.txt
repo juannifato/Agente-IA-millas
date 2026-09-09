@@ -6,3 +6,15 @@
  No hace falta que lo edites a mano.
 ================================================================
 
+----------------------------------------------------------------
+[09/09/2026 17:53] commit 4a1f642 - juannifato
+Mensaje: chore: fijar saltos de linea LF para el workflow
+
+Se agrega .gitattributes para que los archivos del repositorio se
+guarden con LF. El workflow de la bitacora corre en Ubuntu y un
+archivo con CRLF haria fallar el script de bash.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+(La IA no pudo redactar el resumen: The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.)
+
