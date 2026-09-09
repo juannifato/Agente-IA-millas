@@ -18,3 +18,18 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 (La IA no pudo redactar el resumen: The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.)
 
+----------------------------------------------------------------
+[09/09/2026 17:55] commit 766e689 - juannifato
+Mensaje: fix: cambiar el modelo de IA de la bitacora a gpt-oss-120b
+
+El workflow fallaba porque Groq movio los modelos Llama al tier
+Enterprise y la cuenta gratuita ya no tiene acceso a
+llama-3.3-70b-versatile. Se pasa a openai/gpt-oss-120b, que es el
+reemplazo gratuito recomendado, y ademas se lee de la variable de
+repositorio GROQ_MODEL para poder cambiarlo desde GitHub sin editar
+el workflow. Se actualizan README y .env.example en consecuencia.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se sustituyó el modelo de IA usado en la bitácora, pasando de llama‑3.3‑70b‑versatile a openai/gpt‑oss‑120b, ya que el modelo anterior quedó fuera del tier gratuito. Además, el workflow ahora lee el modelo a emplear desde la variable de entorno GROQ_MODEL, lo que permite cambiarlo desde la configuración del repositorio sin tocar el código. Se actualizaron el README y el archivo .env.example para reflejar el nuevo modelo y su configuración.
+
