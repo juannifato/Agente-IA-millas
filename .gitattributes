@@ -1,0 +1,9 @@
+# El workflow corre en Linux: los saltos de linea deben ser LF,
+# si no bash falla con errores raros del tipo $'\r': command not found.
+* text=auto eol=lf
+
+# Archivos de Windows / Visual Studio: se quedan con CRLF.
+*.vb  text eol=crlf
+*.sln text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
