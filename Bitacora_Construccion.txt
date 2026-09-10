@@ -241,3 +241,27 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 
 Se añadió el paquete ia/ con los módulos recorte.py y analisis_ia.py para reducir la respuesta cruda de la aerolínea a los datos esenciales, asignar IDs estables a cada tarifa y delegar la selección de la mejor opción a Groq, reconstruyendo luego la respuesta completa y garantizando un fallback a la regla de menos millas. Además, se implementó la lógica de renovación automática del token de Aerolíneas (renovar_token.py y actualización en token_aerolineas.py) y se adaptó el endpoint /buscar para devolver la recomendación procesada; se añadieron tests unitarios y de integración, y se ajustaron configuraciones de token y logging.
 
+----------------------------------------------------------------
+[10/09/2026 20:20] commit 7e6391d - juannifato
+Mensaje: Dejar el backend probado para Visual Basic y preparar la Fase 5
+
+Se endurece el contrato de la API que va a consumir la app de escritorio con dos
+tandas de pruebas nuevas. test_contrato.py cubre sin red las validaciones de
+entrada, la busqueda sin resultados, el caso de que Aerolineas cambie su formato,
+los GET de servicio y que hasta los errores 404 y 405 salgan en JSON, porque si al
+cliente de Visual Basic le llegara HTML explotaria al parsear. test_endpoint.py
+suma el caso de solo ida ademas del de ida y vuelta que ya estaba. Se agrega
+correr_todo.py, que corre la suite entera y saltea el test que pega a Groq cuando
+no hay clave, en lugar de darlo por fallado.
+
+Se escribe la guia de integracion de la Fase 5 en docs, con el contrato de los
+tres endpoints, las tres formas de respuesta que la app tiene que contemplar y un
+cliente de referencia en VB.NET. Queda sin compilar a proposito, porque en la
+maquina no hay .NET SDK todavia; se documenta que se instala con winget y que
+alcanza la CLI de dotnet sin Visual Studio, a la espera de que Juan confirme el
+stack antes de armar la interfaz.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se reforzó el contrato de la API para que la aplicación de escritorio en Visual Basic reciba siempre respuestas JSON, incluso en errores 404 y 405, y se añadieron pruebas que cubren validaciones de entrada, búsquedas sin resultados y cambios de formato de Aerolíneas. Además, se incorporó soporte para vuelos solo de ida en los tests de endpoints y se creó un script (correr_todo.py) que ejecuta toda la suite de pruebas saltándose el test que requiere la clave de Groq cuando no está disponible. Finalmente, se documentó la integración de la Fase 5 con una guía detallada y un cliente de referencia en VB.NET, indicando cómo instalar el SDK de .NET.
+
