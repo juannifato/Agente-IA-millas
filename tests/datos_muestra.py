@@ -47,3 +47,26 @@ CRUDO = {
     "fareRules": {"basura": "z" * 3000},
     "combinableOffers": {"basura": "z" * 5000},
 }
+
+# Solo ida: brandedOffers con la clave "0" nada mas. La mas barata es la 2da.
+CRUDO_SOLO_IDA = {
+    "searchMetadata": {"shoppingId": "S1"},
+    "brandedOffers": {"0": [
+        {"legs": [{"totalDuration": 140, "segments": [
+            {"airline": "AR", "flightNumber": "1684", "origin": "AEP", "destination": "BRC",
+             "departure": "2026-09-15T08:10:00.000-03:00", "arrival": "2026-09-15T10:30:00.000-03:00"}]}],
+         "offers": [{"brand": {"name": "Economy Promo"}, "fare": {"baseFare": 30000, "taxes": 64022},
+                     "seatAvailability": {"seats": 4}}]},
+        {"legs": [{"totalDuration": 150, "segments": [
+            {"airline": "AR", "flightNumber": "1686", "origin": "AEP", "destination": "BRC",
+             "departure": "2026-09-15T14:00:00.000-03:00", "arrival": "2026-09-15T16:30:00.000-03:00"}]}],
+         "offers": [{"brand": {"name": "Economy Promo"}, "fare": {"baseFare": 22000, "taxes": 64022},
+                     "seatAvailability": {"seats": 7}}]},
+    ]},
+}
+
+# Sin resultados: la busqueda salio bien pero no hay vuelos en millas.
+CRUDO_VACIO = {"searchMetadata": {"shoppingId": "S2"}, "brandedOffers": {}}
+
+# API cambiada: ya no viene brandedOffers. El recorte tiene que avisar, no romper.
+CRUDO_ROTO = {"searchMetadata": {"shoppingId": "S3"}, "otraCosa": 1}

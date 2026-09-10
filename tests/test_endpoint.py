@@ -13,22 +13,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import app as appmod
 import scrapers
 from scrapers.base import Scraper
-from tests.datos_muestra import CRUDO
+from tests.datos_muestra import CRUDO, CRUDO_SOLO_IDA
 
 
-class ScraperFalso(Scraper):
-    clave = "aerolineas_arg"
-    nombre = "Aerolineas (simulado)"
+def usar_scraper(crudo):
+    """El backend usa un scraper simulado que devuelve `crudo` (sin token real)."""
+    class Falso(Scraper):
+        clave = "aerolineas_arg"
+        nombre = "Aerolineas (simulado)"
 
-    def buscar(self, *a, **k):
-        return CRUDO
+        def buscar(self, *a, **k):
+            return crudo
+
+    appmod.scrapers.obtener = lambda clave: Falso()
 
 
 def main() -> int:
-    # Se reemplaza el scraper real por el falso: no toca el token de Aerolineas.
-    appmod.scrapers.obtener = lambda clave: ScraperFalso()
     cliente = appmod.app.test_client()
 
+    # --- 1) ida y vuelta ---
+    usar_scraper(CRUDO)
     r = cliente.post("/buscar", json={
         "origen": "AEP", "destino": "BRC",
         "fecha": "15/09/2026", "fecha_vuelta": "22/09/2026",
@@ -38,17 +42,26 @@ def main() -> int:
     r2 = cliente.post("/buscar", json={"origen": "AEP", "destino": "AEP", "fecha": "15/09/2026"})
     j2 = r2.get_json()
 
+    # --- 2) solo ida ---
+    usar_scraper(CRUDO_SOLO_IDA)
+    ri = cliente.post("/buscar", json={"origen": "AEP", "destino": "BRC", "fecha": "15/09/2026"})
+    ji = ri.get_json()
+
     chequeos = [
-        ("HTTP 200 en la busqueda valida", r.status_code == 200 and j["ok"]),
-        ("ya no se devuelve el 'crudo'", "crudo" not in j),
-        ("hay recomendacion 'mejor' con ida y vuelta",
+        ("ida+vuelta: HTTP 200", r.status_code == 200 and j["ok"]),
+        ("ida+vuelta: ya no se devuelve el 'crudo'", "crudo" not in j),
+        ("ida+vuelta: recomendacion con dos tramos",
          j.get("mejor") and len(j["mejor"]["tramos"]) == 2),
-        ("las millas totales son la suma de los tramos",
+        ("ida+vuelta: millas totales = suma de tramos",
          j["mejor"]["millas"] == sum(t["millas"] for t in j["mejor"]["tramos"])),
-        ("evaluo las 4 opciones", j.get("opciones_evaluadas") == 4),
-        ("hay texto de analisis", len(j.get("analisis", "")) > 10),
+        ("ida+vuelta: evaluo las 4 opciones", j.get("opciones_evaluadas") == 4),
+        ("ida+vuelta: hay texto de analisis", len(j.get("analisis", "")) > 10),
         ("origen==destino -> HTTP 400 con motivo",
          r2.status_code == 400 and j2["motivo"] == "datos_invalidos"),
+        ("solo ida: HTTP 200 con un unico tramo",
+         ri.status_code == 200 and ji["mejor"] and len(ji["mejor"]["tramos"]) == 1),
+        ("solo ida: el tramo es la 'ida'", ji["mejor"]["tramos"][0]["tramo"] == "ida"),
+        ("solo ida: eligio la mas barata (22000)", ji["mejor"]["millas"] == 22000),
     ]
     for txt, ok in chequeos:
         print(f"  [{'OK ' if ok else 'MAL'}] {txt}")

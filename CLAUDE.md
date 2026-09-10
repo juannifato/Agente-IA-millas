@@ -99,10 +99,8 @@ Disponible: Git, Node.js v24, Python 3.14, GitHub CLI (`gh`, sin autenticar).
 # Instalar dependencias
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 
-# Correr los tests (test_endpoint necesita GROQ_API_KEY; los otros no usan red)
-.\.venv\Scripts\python.exe tests\test_recorte.py
-.\.venv\Scripts\python.exe tests\test_analisis.py
-.\.venv\Scripts\python.exe tests\test_endpoint.py
+# Correr todos los tests de una (test_endpoint necesita GROQ_API_KEY; el resto no usa red)
+.\.venv\Scripts\python.exe tests\correr_todo.py
 ```
 
 Flask corre sin recarga automática: **después de editar código hay que
@@ -127,7 +125,15 @@ scrapers/
   __init__.py                 Registro y ruteo dinámico por clave (Fase 7)
   aerolineas_arg.py           Extractor de Aerolíneas Argentinas
   token_aerolineas.py         Renovación automática del token (escrito, sin probar)
+tests/
+  correr_todo.py              Corre toda la suite y da un único resultado
+  test_recorte.py             El recorte (sin red)
+  test_analisis.py            Reconstrucción y red de seguridad (sin red)
+  test_contrato.py            Validaciones y contrato de la API (sin red, 15 casos)
+  test_endpoint.py            /buscar de punta a punta con Groq real
+  datos_muestra.py            Crudos de ejemplo con la forma real de Aerolíneas
 docs/plan_original.md          El plan de las 7 fases, con sus desvíos
+docs/fase5_visual_basic.md     Guía de integración para la app de Visual Basic
 .github/workflows/autodoc.yml La auto-bitácora
 Bitacora_Construccion.txt     Se escribe sola, no editar a mano
 ```
@@ -220,9 +226,27 @@ una búsqueda real y confirmar que `recortar()` no tira nada importante.
 
 ### Lo que sigue: Fase 5 (Visual Basic)
 
-La forma de la respuesta de `/buscar` que consume VB está documentada en el
-README (sección "Respuesta de POST /buscar"). Ojo: **no hay .NET SDK ni Visual
-Studio en la máquina** (ver Entorno), hay que resolver eso primero.
+Guía completa de integración en `docs/fase5_visual_basic.md`: contrato de los
+tres endpoints, las tres formas de respuesta a contemplar, y un cliente VB.NET
+de referencia (`HttpClient` + `System.Text.Json`), **sin compilar** porque acá
+falta el entorno.
+
+El backend ya quedó **listo y probado** para que VB lo consuma: `test_contrato.py`
+cubre validaciones, sin-resultados y API rota; `test_endpoint.py` cubre ida+vuelta
+y solo-ida con Groq real.
+
+Bloqueo del entorno resuelto en el papel: **no hay .NET SDK ni Visual Studio**,
+pero winget ofrece el SDK (hasta .NET 10) y con la CLI `dotnet` alcanza para
+WinForms VB.NET, sin Visual Studio:
+
+```powershell
+winget install Microsoft.DotNet.SDK.10     # LTS; cerrar y reabrir la terminal
+dotnet new winforms -lang VB -o MillasApp
+```
+
+**Decisión pendiente de Juan** antes de armar la GUI: confirmar WinForms y la
+versión del SDK. La GUI no se puede ver ni compilar desde acá, así que ese ciclo
+lo maneja él.
 
 ### Bugs y dudas abiertas
 
