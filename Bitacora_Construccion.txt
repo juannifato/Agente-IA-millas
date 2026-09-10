@@ -108,3 +108,36 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se implementó la estructura básica del backend Flask con rutas modulares para los scrapers, exponiendo los endpoints /salud, /aerolineas y /buscar que siempre retornan JSON. Se añadió validación de entrada en /buscar, normalizando fechas y verificando códigos IATA, y se centralizó la configuración en config.py. Además, se definió la arquitectura de los scrapers con un contrato base y registro dinámico, y se implementó el scraper de Aerolíneas Argentinas con manejo completo de errores. Todo esto permite que el cliente Visual Basic consuma la API de forma fiable y facilite la incorporación de nuevas aerolíneas.
 
+----------------------------------------------------------------
+[09/09/2026 22:10] commit 3b09e94 - juannifato
+Mensaje: feat: conectar el extractor a la API real de Aerolineas Argentinas
+
+Identificada la API que usa la propia web de Aerolineas para mostrar
+vuelos en millas: GET api.aerolineas.com.ar/v1/flights/offers. Un
+sondeo sin credenciales devuelve 401 y no 404, lo que confirma que
+la ruta y los parametros son correctos y que solo falta el token.
+
+El extractor arma la consulta con el formato que espera la API: los
+tramos van como ORIGEN-DESTINO-AAAAMMDD en el parametro leg, que se
+repite para la vuelta, y awardBooking=true es lo que convierte la
+busqueda en busqueda por millas. Verificado con una prueba que
+intercepta la peticion y comprueba la URL resultante sin llegar a
+enviarla, para no consultar el servidor de Aerolineas al azar.
+
+La API exige un token Bearer que no sale de un endpoint publico
+(/v1/token responde 404), asi que se lee de AEROLINEAS_TOKEN en el
+.env, igual que la clave de Groq. Cuando falta o vence, el backend
+lo dice con un motivo propio en lugar de fallar de forma opaca.
+
+POST /buscar ahora acepta fecha_vuelta y adultos, ambos opcionales,
+y valida que la vuelta no sea anterior a la ida y que los pasajeros
+esten entre 1 y 9. Los codigos HTTP pasan a distinguir de quien es
+el problema: 400 si los datos que llegaron estan mal, 503 si al
+backend le falta configuracion y 502 si fallo la aerolinea.
+
+Probado con 16 casos entre construccion de URL y endpoint.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se integró el extractor con la API real de Aerolíneas Argentinas, armando la URL con los parámetros `leg` y `awardBooking=true` y leyendo el token Bearer desde la variable `AEROLINEAS_TOKEN` del .env. Además, el endpoint `POST /buscar` ahora acepta `fecha_vuelta` y `adultos` como opcionales, con validaciones que impiden fechas de regreso anteriores a la ida y limitan la cantidad de pasajeros entre 1 y 9, devolviendo códigos HTTP específicos (400, 502, 503) según el tipo de error. También se añadieron configuraciones y mejoras en la clase base del scraper y se actualizó la documentación de entorno.
+
