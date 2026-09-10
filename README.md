@@ -20,7 +20,7 @@ Backend Python (Flask) en Render         <-- Fases 3 y 6
 
 - [x] **Fase 1** — Entorno, repositorio y auto-bitácora con GitHub Actions
 - [x] **Fase 2** — Cuentas: Render + Groq, variables de entorno
-- [ ] **Fase 3** — Motor de extracción (API de Aerolíneas Argentinas)
+- [x] **Fase 3** — Motor de extracción (API de Aerolíneas Argentinas)
 - [ ] **Fase 4** — Cerebro analítico (Groq)
 - [ ] **Fase 5** — Interfaz de escritorio en Visual Basic
 - [ ] **Fase 6** — Despliegue en Render con auto-deploy
@@ -102,3 +102,55 @@ Tres cosas que costaron un rato y conviene no volver a tropezar:
 Modelos disponibles en la cuenta gratuita al 09/09/2026: `openai/gpt-oss-120b`,
 `openai/gpt-oss-20b`, `qwen/qwen3.6-27b`, `qwen/qwen3.8-27b`, `groq/compound`,
 `groq/compound-mini`, `allam-2-7b`. Ningún Llama.
+
+## La API de Aerolíneas Argentinas
+
+Endpoint que usa su propia web para mostrar vuelos en millas:
+
+```
+GET https://api.aerolineas.com.ar/v1/flights/offers
+    ?adt=1&inf=0&chd=0            cantidad de adultos, bebés y menores
+    &cabinClass=Economy
+    &flightType=ONE_WAY           o ROUND_TRIP
+    &awardBooking=true            <-- esto es lo que la vuelve búsqueda en millas
+    &flexDates=false
+    &leg=AEP-BRC-20260915         ORIGEN-DESTINO-AAAAMMDD, se repite para la vuelta
+```
+
+Requiere un header `Authorization: Bearer <token>`. El token es **anónimo**: la web
+muestra los precios en millas sin iniciar sesión, así que no está atado a ninguna
+cuenta. No sale de `/v1/token` (responde 404) y por ahora se carga a mano en
+`AEROLINEAS_TOKEN`. Queda pendiente automatizar de dónde lo obtiene la web.
+
+El `shoppingId` que aparece en la URL del navegador **no hace falta mandarlo**: lo
+genera la API y vuelve dentro de `searchMetadata`.
+
+### Forma de la respuesta
+
+```
+brandedOffers
+  ├── "0"  -> lista de vuelos de IDA
+  └── "1"  -> lista de vuelos de VUELTA
+        └── cada elemento:
+              legs[0].segments[]  -> flightNumber, airline, origin, destination,
+                                     departure, arrival, duration, stops
+              offers[]            -> brand.name, seatAvailability.seats,
+                                     fare.baseFare  <-- MILLAS
+                                     fare.taxes     <-- impuestos aparte
+```
+
+Medición de una búsqueda real (AEP-BRC ida y vuelta, 19 vuelos, 137 combinaciones
+de vuelo y tarifa):
+
+| Parte | Tamaño | |
+|---|---:|---|
+| Respuesta completa | 243.664 b | |
+| `fareRules` | 76.985 b | letra chica de las tarifas: ruido |
+| `combinableOffers` | 103.578 b | IDs de combinaciones: ruido |
+| **Solo lo necesario** | **34.131 b** | **86% menos** |
+
+Por eso la Fase 4 **no le puede mandar el JSON crudo a la IA**: hay que recortarlo
+antes. Es más rápido, más barato y con menos ruido el modelo acierta más.
+
+Detalle a confirmar: `taxes` viene como entero (ej. `64022`) y falta determinar si
+son centavos o pesos enteros.
