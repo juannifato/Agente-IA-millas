@@ -24,8 +24,9 @@ de tier gratuito y sin tarjeta de crédito. Ante dos opciones, va la gratuita.
 | 6 — Deploy en Render | pendiente |
 | 7 — Más aerolíneas | la estructura ya está lista |
 
-El plan original completo de las 7 fases está en el documento que trajo Juan;
-el README tiene el resumen y la arquitectura.
+El plan original completo de las 7 fases está transcripto en
+`docs/plan_original.md`, junto con la lista de desvíos que se le hicieron.
+El README tiene el resumen y la arquitectura.
 
 ---
 
@@ -115,6 +116,7 @@ scrapers/
   base.py                     Contrato común (clase Scraper) + ErrorScraper
   __init__.py                 Registro y ruteo dinámico por clave (Fase 7)
   aerolineas_arg.py           Extractor de Aerolíneas Argentinas
+docs/plan_original.md          El plan de las 7 fases, con sus desvíos
 .github/workflows/autodoc.yml La auto-bitácora
 Bitacora_Construccion.txt     Se escribe sola, no editar a mano
 ```
