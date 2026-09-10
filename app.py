@@ -16,6 +16,8 @@ from flask import Flask, jsonify, request
 
 import scrapers
 from config import DEBUG, PORT
+from ia import ErrorRecorte, recortar
+from ia.analisis_ia import ErrorIA, analizar
 from scrapers.base import ErrorScraper
 
 app = Flask(__name__)
@@ -150,8 +152,39 @@ def buscar():
             "consulta": consulta,
         }), codigo
 
-    # Fase 4: aca se le pasa `crudo` al modulo de IA para que compare y elija.
-    return jsonify({"ok": True, "consulta": consulta, "crudo": crudo})
+    # Fase 4: recortar el crudo (el 74% es ruido) y que la IA elija la mejor.
+    try:
+        recortado = recortar(crudo)
+    except ErrorRecorte as e:
+        # Si el recorte falla es porque la aerolinea cambio la forma de su
+        # respuesta: el problema es de ellos, no de los datos del cliente.
+        return jsonify({"ok": False, "motivo": e.motivo, "error": str(e),
+                        "consulta": consulta}), 502
+
+    # Sin vuelos en millas no hay nada que analizar: no se gasta una llamada a
+    # la IA y se responde 200 (la busqueda salio bien, solo que dio vacia).
+    if recortado["total_opciones"] == 0:
+        return jsonify({
+            "ok": True, "consulta": consulta, "mejor": None,
+            "mensaje": "No se encontraron vuelos en millas para esas fechas.",
+        })
+
+    try:
+        analisis = analizar(recortado)
+    except ErrorIA as e:
+        # 503 si al backend le falta la clave de Groq; 502 si Groq fallo.
+        codigo = 503 if e.motivo == "falta_clave_groq" else 502
+        return jsonify({"ok": False, "motivo": e.motivo, "error": str(e),
+                        "consulta": consulta}), codigo
+
+    return jsonify({
+        "ok": True,
+        "consulta": consulta,
+        "mejor": analisis["mejor"],
+        "analisis": analisis["analisis"],
+        "eleccion_por_ia": analisis["eleccion_por_ia"],
+        "opciones_evaluadas": recortado["total_opciones"],
+    })
 
 
 @app.errorhandler(404)

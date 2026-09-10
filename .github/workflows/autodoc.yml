@@ -52,7 +52,7 @@ jobs:
           if [ -z "${GROQ_API_KEY:-}" ]; then
             RESUMEN="(No hay GROQ_API_KEY cargada en los Secrets del repositorio, por eso no se genero resumen automatico.)"
           else
-            PROMPT="Sos un documentador tecnico. Te paso el mensaje de un commit y la lista de archivos modificados de un proyecto llamado 'Agente Millas IA' (un backend en Node.js que consulta vuelos en millas y los analiza con IA).
+            PROMPT="Sos un documentador tecnico. Te paso el mensaje de un commit y la lista de archivos modificados de un proyecto llamado 'Agente Millas IA' (un backend en Python con Flask que consulta vuelos en millas y los analiza con IA).
 
           MENSAJE DEL COMMIT:
           ${MENSAJE}
@@ -65,7 +65,7 @@ jobs:
             PAYLOAD="$(jq -n \
               --arg model "$GROQ_MODEL" \
               --arg prompt "$PROMPT" \
-              '{model:$model, temperature:0.3, max_tokens:400, messages:[{role:"user", content:$prompt}]}')"
+              '{model:$model, temperature:0.3, max_tokens:1200, reasoning_effort:"low", messages:[{role:"user", content:$prompt}]}')"
 
             RESPUESTA="$(curl -sS --max-time 60 \
               -X POST https://api.groq.com/openai/v1/chat/completions \

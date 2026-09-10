@@ -8,7 +8,7 @@ el resultado como JSON para una app de escritorio en Visual Basic.
 de tier gratuito y sin tarjeta de crédito. Ante dos opciones, va la gratuita.
 
 - Repo: https://github.com/juannifato/Agente-IA-millas
-- Arrancó el 2026-09-09. Última sesión: 2026-09-09.
+- Arrancó el 2026-09-09. Última sesión: 2026-09-10.
 
 ---
 
@@ -19,8 +19,8 @@ de tier gratuito y sin tarjeta de crédito. Ante dos opciones, va la gratuita.
 | 1 — Entorno, repo y auto-bitácora | ✅ probada |
 | 2 — Cuentas Groq + Render | ✅ Groq verificado. **Render sin verificar** (se prueba en la Fase 6) |
 | 3 — Motor de extracción | ✅ **búsqueda real funcionando** |
-| 4 — Cerebro analítico (IA) | ⬅️ **acá vamos** |
-| 5 — Interfaz Visual Basic | pendiente |
+| 4 — Cerebro analítico (IA) | ✅ recorte + análisis probados (con datos reales de Aerolíneas **falta validar**, el token estaba vencido) |
+| 5 — Interfaz Visual Basic | ⬅️ **acá vamos** |
 | 6 — Deploy en Render | pendiente |
 | 7 — Más aerolíneas | la estructura ya está lista |
 
@@ -98,6 +98,11 @@ Disponible: Git, Node.js v24, Python 3.14, GitHub CLI (`gh`, sin autenticar).
 
 # Instalar dependencias
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+
+# Correr los tests (test_endpoint necesita GROQ_API_KEY; los otros no usan red)
+.\.venv\Scripts\python.exe tests\test_recorte.py
+.\.venv\Scripts\python.exe tests\test_analisis.py
+.\.venv\Scripts\python.exe tests\test_endpoint.py
 ```
 
 Flask corre sin recarga automática: **después de editar código hay que
@@ -111,11 +116,17 @@ reiniciar el servidor**, si no se prueba la versión vieja (ya pasó).
 app.py                        Flask. GET /salud, GET /aerolineas, POST /buscar
 config.py                     Lee el .env una sola vez y expone las constantes
 verificar_setup.py            Chequeo de entorno: .env + conexión real con Groq
+renovar_token.py              Renueva el token de Aerolíneas (necesita el client_secret)
 requirements.txt              Dependencias con versión fijada
+ia/
+  recorte.py                  Achica el crudo de la aerolínea a lo comparable
+  analisis_ia.py              Le pide a Groq que elija la mejor tarifa por tramo
+  __init__.py                 Expone recortar() y ErrorRecorte
 scrapers/
   base.py                     Contrato común (clase Scraper) + ErrorScraper
   __init__.py                 Registro y ruteo dinámico por clave (Fase 7)
   aerolineas_arg.py           Extractor de Aerolíneas Argentinas
+  token_aerolineas.py         Renovación automática del token (escrito, sin probar)
 docs/plan_original.md          El plan de las 7 fases, con sus desvíos
 .github/workflows/autodoc.yml La auto-bitácora
 Bitacora_Construccion.txt     Se escribe sola, no editar a mano
@@ -188,40 +199,52 @@ commit y lo agrega a `Bitacora_Construccion.txt` con un commit propio.
 
 ## Pendientes concretos
 
-### Fase 4 — el cerebro analítico (lo que sigue)
+### Fase 4 — hecha (2026-09-10), con una validación pendiente
 
-**Antes de escribir el prompt hay que recortar el JSON.** Medición real de una
-búsqueda AEP-BRC ida y vuelta (19 vuelos, 137 combinaciones de vuelo y tarifa):
+Se construyó y probó el cerebro analítico:
 
-| Parte | Tamaño |
-|---|---:|
-| Respuesta completa | 243.664 b |
-| `fareRules` (letra chica) | 76.985 b |
-| `combinableOffers` (IDs internos) | 103.578 b |
-| **Solo lo necesario** | **34.131 b — 86% menos** |
+- `ia/recorte.py` achica el crudo de la aerolínea a lo comparable (probado con
+  muestra sintética, ~93% menos). Cada tarifa queda con un `id` estable.
+- `ia/analisis_ia.py` le pasa el recorte a Groq, que elige un `id` por tramo;
+  Python reconstruye la respuesta (la IA **no** copia números de millas). Si la
+  IA falla, cae a la regla "menos millas" y lo avisa con `eleccion_por_ia:false`.
+- `app.py` ya devuelve `mejor` + `analisis` en vez del crudo.
+- Probado de punta a punta con Groq real y el scraper simulado (para no depender
+  del token). Tests en `tests/`: `test_recorte.py` y `test_analisis.py` no usan
+  red (se corren siempre); `test_endpoint.py` pega contra Groq de verdad.
 
-O sea que el **74% es ruido**. Mandarle el crudo al modelo sería lento, caro y
-menos preciso. El plan es: recortar en Python → pasar eso a la IA → devolver el
-JSON del vuelo más conveniente.
+**Lo que falta de la Fase 4:** validar el recorte contra la respuesta **real** de
+Aerolíneas. Los nombres de campo salen del README, no de datos verdaderos, y no
+se pudo probar porque el token estaba vencido. Apenas haya token vigente: correr
+una búsqueda real y confirmar que `recortar()` no tira nada importante.
 
-Los campos que importan de cada vuelo: `flightNumber`, `airline`, `origin`,
-`destination`, `departure`, `arrival`, `stops`, `totalDuration`, `brand.name`,
-`fare.baseFare` (millas), `fare.taxes`, `seatAvailability.seats`.
+### Lo que sigue: Fase 5 (Visual Basic)
 
-Según el plan original, el módulo va en `ia/analisis_ia.py`.
+La forma de la respuesta de `/buscar` que consume VB está documentada en el
+README (sección "Respuesta de POST /buscar"). Ojo: **no hay .NET SDK ni Visual
+Studio en la máquina** (ver Entorno), hay que resolver eso primero.
 
 ### Bugs y dudas abiertas
 
-- **La bitácora trunca los resúmenes largos.** El workflow tiene
-  `max_tokens: 400` y gpt-oss gasta parte razonando (mismo problema del punto 2
-  de arriba). El último resumen quedó cortado a mitad de frase. Subir ese
-  límite en `.github/workflows/autodoc.yml`.
+- **Token de Aerolíneas — automatización a medio camino.** Se encontró que sale
+  de `POST https://api.aerolineas.com.ar/v1/auth/token` (no `/v1/token`, que da
+  404), con `client_id` (público, va dentro del JWT) + `client_secret`. Es un JWT
+  anónimo que **dura 24 h exactas**. Está escrito `scrapers/token_aerolineas.py`
+  + `renovar_token.py`, pero **sin probar**: falta que Juan cargue el
+  `client_secret` en `AEROLINEAS_CLIENT_SECRET` (sale del DevTools, pestaña
+  Payload de la llamada `auth/token`). El clasificador de auto-modo bloqueó
+  extraer el secret del JS por mi cuenta, por eso lo carga él. Cuando esté:
+  correr `renovar_token.py`, ver el 200 real, ajustar nombres de campo si hace
+  falta, y recién ahí enganchar el auto-refresh en el scraper (hoy no está en el
+  flujo de `/buscar` porque es código sin probar).
 - **`taxes` viene como entero** (ej. `64022`) y falta determinar si son centavos
   o pesos enteros. Importa para no mostrarle un número equivocado al usuario.
-- **El token de Aerolíneas se carga a mano** en `AEROLINEAS_TOKEN`. Se confirmó
-  que es **anónimo** (la web muestra millas sin iniciar sesión), así que se
-  puede automatizar y dejar el sistema desatendido en Render. Falta encontrar de
-  dónde lo saca la web: `/v1/token` responde 404. Cuando vence, el backend
-  avisa con `motivo: "token_vencido"`.
 - **Render puede no soportar Python 3.14.** Mantener el código compatible con
   3.11+ y fijar la versión que Render ofrezca al llegar a la Fase 6.
+
+### Ya resueltos
+
+- ✅ **La bitácora truncaba los resúmenes.** Era el `max_tokens: 400` con gpt-oss
+  razonando. Se subió a 1200 y se agregó `reasoning_effort: "low"` en
+  `.github/workflows/autodoc.yml` (2026-09-10). De paso se corrigió el prompt,
+  que decía "backend en Node.js" siendo Python.

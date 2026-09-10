@@ -21,7 +21,7 @@ Backend Python (Flask) en Render         <-- Fases 3 y 6
 - [x] **Fase 1** — Entorno, repositorio y auto-bitácora con GitHub Actions
 - [x] **Fase 2** — Cuentas: Render + Groq, variables de entorno
 - [x] **Fase 3** — Motor de extracción (API de Aerolíneas Argentinas)
-- [ ] **Fase 4** — Cerebro analítico (Groq)
+- [x] **Fase 4** — Cerebro analítico (Groq): recorta el JSON y elige el mejor vuelo
 - [ ] **Fase 5** — Interfaz de escritorio en Visual Basic
 - [ ] **Fase 6** — Despliegue en Render con auto-deploy
 - [ ] **Fase 7** — Escalabilidad: más aerolíneas (Smiles, AA, ...)
@@ -117,10 +117,17 @@ GET https://api.aerolineas.com.ar/v1/flights/offers
     &leg=AEP-BRC-20260915         ORIGEN-DESTINO-AAAAMMDD, se repite para la vuelta
 ```
 
-Requiere un header `Authorization: Bearer <token>`. El token es **anónimo**: la web
-muestra los precios en millas sin iniciar sesión, así que no está atado a ninguna
-cuenta. No sale de `/v1/token` (responde 404) y por ahora se carga a mano en
-`AEROLINEAS_TOKEN`. Queda pendiente automatizar de dónde lo obtiene la web.
+Requiere un header `Authorization: Bearer <token>`. El token es **anónimo** (un JWT
+de Auth0 que **dura 24 h exactas**): la web muestra los precios en millas sin iniciar
+sesión, así que no está atado a ninguna cuenta. Por ahora se carga a mano en
+`AEROLINEAS_TOKEN`.
+
+Sale de `POST https://api.aerolineas.com.ar/v1/auth/token` (no de `/v1/token`, que da
+404), que pide un `client_id` —público, viaja dentro del propio JWT— y un
+`client_secret`. Con ese secret cargado en `AEROLINEAS_CLIENT_SECRET`, el script
+`renovar_token.py` lo renueva sin abrir el navegador. Esa pieza está escrita pero
+**sin probar** hasta tener el secret; una vez validada se engancha para que Render
+quede desatendido (Fase 6).
 
 El `shoppingId` que aparece en la URL del navegador **no hace falta mandarlo**: lo
 genera la API y vuelve dentro de `searchMetadata`.
@@ -154,3 +161,41 @@ antes. Es más rápido, más barato y con menos ruido el modelo acierta más.
 
 Detalle a confirmar: `taxes` viene como entero (ej. `64022`) y falta determinar si
 son centavos o pesos enteros.
+
+## Respuesta de `POST /buscar` (lo que consume Visual Basic)
+
+El backend recorta el crudo (`ia/recorte.py`), se lo pasa a Groq para que elija la
+tarifa más conveniente por tramo (`ia/analisis_ia.py`) y devuelve ya masticado:
+
+```json
+{
+  "ok": true,
+  "consulta": { "origen": "AEP", "destino": "BRC", "fecha": "2026-09-15",
+                "fecha_vuelta": "2026-09-22", "adultos": 1, "aerolinea": "aerolineas_arg" },
+  "mejor": {
+    "millas": 57000,
+    "impuestos": 128044,
+    "tramos": [
+      { "tramo": "ida", "numeros": ["AR1200","AR1502"], "origen": "AEP", "destino": "BRC",
+        "sale": "2026-09-15T06:00", "llega": "2026-09-15T10:20", "escalas": 1,
+        "duracion_min": 260, "tarifa": "Economy Promo", "millas": 25000,
+        "impuestos": 64022, "asientos": 9 }
+    ]
+  },
+  "analisis": "Texto corto en español explicando por qué es la más conveniente.",
+  "eleccion_por_ia": true,
+  "opciones_evaluadas": 4
+}
+```
+
+Claves para el frontend:
+
+- **La IA elige, pero no copia números.** Devuelve un `id` de tarifa; Python
+  reconstruye `mejor` desde el recorte, así las millas nunca salen mal transcriptas.
+- **`eleccion_por_ia`** es `false` si la IA falló y se cayó a la regla simple (la de
+  menos millas). La respuesta sigue siendo válida; sirve de aviso.
+- Si no hay vuelos en millas, responde `200` con `"mejor": null` y un `mensaje`,
+  sin gastar una llamada a la IA.
+- Los errores mantienen el contrato de siempre: JSON con `motivo` y el código HTTP
+  según de quién es el problema (`503` falta la clave de Groq, `502` falló Groq o la
+  aerolínea).
