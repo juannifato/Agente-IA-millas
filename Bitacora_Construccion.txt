@@ -194,3 +194,23 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se añadió el archivo CLAUDE.md, que contiene la documentación completa del proyecto Agente Millas IA: descripción de las siete fases, la forma de trabajo con Juan, la trampa del alias de Microsoft Store que oculta el comando python, el mapa del repositorio y el contrato de la API. Además se listan los seis problemas que ya consumieron tiempo y las tareas pendientes (recorte del JSON para la fase 4, truncado de los resúmenes de la bitácora, unidad de los impuestos y automatización del token de Aerolíneas). El objetivo es que Claude Code cargue este contexto al iniciar una sesión en la carpeta y evitar perder información ni volver a tropezar con los mismos inconvenientes.
 
+----------------------------------------------------------------
+[10/09/2026 18:21] commit 58f3f11 - juannifato
+Mensaje: docs: incorporar el plan original de las siete fases al repositorio
+
+El CLAUDE.md remitia al documento que trajo Juan, pero ese documento
+vivia solo en la conversacion y no en el repositorio, con lo que una
+sesion nueva no tendria forma de leerlo. Se transcribe completo en
+docs/plan_original.md, respetando el texto original para no perder
+la intencion, y se agrega al final una tabla con los desvios que se
+le hicieron durante la construccion: Python en lugar de Node,
+gpt-oss en lugar de Llama 3 porque Groq movio los Llama al tier
+Enterprise, y el descarte del Plan B de la Fase 3.
+
+Con esto el repositorio queda autosuficiente: alcanza con abrirlo
+para tener todo el contexto del proyecto.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se añadió el documento docs/plan_original.md que contiene íntegramente el plan original de siete fases del proyecto, junto con una tabla que detalla los desvíos tomados (uso de Python en lugar de Node, sustitución de Llama 3 por gpt‑oss y descarte del Plan B de la fase 3). Además, se actualizó CLAUDE.md para que apunte a este nuevo archivo. Con esto el repositorio queda autosuficiente, permitiendo a cualquier nuevo colaborador acceder al contexto completo del proyecto sin depender de conversaciones externas.
+
