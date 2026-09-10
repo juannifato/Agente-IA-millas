@@ -66,6 +66,19 @@ def _leer_fecha(valor) -> str:
     return fecha.isoformat()
 
 
+def _leer_adultos(valor) -> int:
+    """Cantidad de adultos. Ausente vale 1; la API acepta hasta 9."""
+    if valor is None or valor == "":
+        return 1
+    try:
+        cantidad = int(valor)
+    except (TypeError, ValueError):
+        raise ErrorDeDatos(f"El campo 'adultos' debe ser un numero, y llego '{valor}'.")
+    if not 1 <= cantidad <= 9:
+        raise ErrorDeDatos("El campo 'adultos' debe estar entre 1 y 9.")
+    return cantidad
+
+
 @app.get("/salud")
 def salud():
     return jsonify({
@@ -97,6 +110,14 @@ def buscar():
         fecha_iso = _leer_fecha(cuerpo.get("fecha"))
         if origen == destino:
             raise ErrorDeDatos("El origen y el destino no pueden ser iguales.")
+
+        # La vuelta es opcional: sin ella se busca solo ida.
+        vuelta = cuerpo.get("fecha_vuelta")
+        fecha_vuelta_iso = _leer_fecha(vuelta) if vuelta else None
+        if fecha_vuelta_iso and fecha_vuelta_iso < fecha_iso:
+            raise ErrorDeDatos("La fecha de vuelta es anterior a la de ida.")
+
+        adultos = _leer_adultos(cuerpo.get("adultos"))
         clave = (cuerpo.get("aerolinea") or scrapers.CLAVE_POR_DEFECTO).strip()
     except ErrorDeDatos as e:
         return jsonify({"ok": False, "motivo": "datos_invalidos", "error": str(e)}), 400
@@ -105,15 +126,23 @@ def buscar():
         "origen": origen,
         "destino": destino,
         "fecha": fecha_iso,
+        "fecha_vuelta": fecha_vuelta_iso,
+        "adultos": adultos,
         "aerolinea": clave,
     }
 
     try:
         extractor = scrapers.obtener(clave)
-        crudo = extractor.buscar(origen, destino, fecha_iso)
+        crudo = extractor.buscar(origen, destino, fecha_iso, fecha_vuelta_iso, adultos)
     except ErrorScraper as e:
-        # 502: el problema no es del cliente sino de la aerolinea de la que dependemos.
-        codigo = 400 if e.motivo == "aerolinea_desconocida" else 502
+        # Cada motivo dice de quien es el problema, y el codigo HTTP debe
+        # coincidir: 400 si los datos que llegaron estan mal, 503 si al backend
+        # le falta configuracion, y 502 si fallo la aerolinea de la que dependemos.
+        codigo = {
+            "aerolinea_desconocida": 400,
+            "falta_token": 503,
+            "token_vencido": 503,
+        }.get(e.motivo, 502)
         return jsonify({
             "ok": False,
             "motivo": e.motivo,

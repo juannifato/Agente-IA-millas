@@ -22,6 +22,10 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
+# --- Aerolineas Argentinas ---
+# Token Bearer que exige su API. Se renueva a mano desde el .env cuando vence.
+AEROLINEAS_TOKEN = os.getenv("AEROLINEAS_TOKEN", "")
+
 # --- Servidor ---
 PORT = int(os.getenv("PORT", "3000"))
 DEBUG = os.getenv("DEBUG", "").lower() in ("1", "true", "si")

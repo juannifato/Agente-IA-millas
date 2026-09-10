@@ -28,13 +28,23 @@ class Scraper(ABC):
     nombre: str = ""
 
     @abstractmethod
-    def buscar(self, origen: str, destino: str, fecha_iso: str) -> dict:
+    def buscar(
+        self,
+        origen: str,
+        destino: str,
+        fecha_iso: str,
+        fecha_vuelta_iso: str | None = None,
+        adultos: int = 1,
+    ) -> dict:
         """Devuelve los datos crudos de los vuelos disponibles.
 
         Args:
             origen: codigo IATA de salida, en mayusculas (ej. "BUE").
             destino: codigo IATA de llegada, en mayusculas (ej. "MAD").
             fecha_iso: fecha de salida en formato AAAA-MM-DD.
+            fecha_vuelta_iso: fecha de regreso en AAAA-MM-DD. Si es None se
+                busca solo ida.
+            adultos: cantidad de pasajeros adultos.
 
         Returns:
             Un dict con los datos tal como los entrega la aerolinea. No se
