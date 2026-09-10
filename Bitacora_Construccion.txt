@@ -214,3 +214,30 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se añadió el documento docs/plan_original.md que contiene íntegramente el plan original de siete fases del proyecto, junto con una tabla que detalla los desvíos tomados (uso de Python en lugar de Node, sustitución de Llama 3 por gpt‑oss y descarte del Plan B de la fase 3). Además, se actualizó CLAUDE.md para que apunte a este nuevo archivo. Con esto el repositorio queda autosuficiente, permitiendo a cualquier nuevo colaborador acceder al contexto completo del proyecto sin depender de conversaciones externas.
 
+----------------------------------------------------------------
+[10/09/2026 20:04] commit 8b08281 - juannifato
+Mensaje: Construir el cerebro analitico de la Fase 4 y automatizar el token
+
+Se agrega el paquete ia/ con dos piezas separadas a proposito. El modulo
+recorte.py achica la respuesta de la aerolinea a lo unico comparable, porque el
+74% del crudo (fareRules y combinableOffers) es ruido que haria la consulta a la
+IA lenta, cara y menos precisa; ademas le pone a cada tarifa un id estable. El
+modulo analisis_ia.py le pasa ese recorte a Groq para que elija un id por tramo,
+y despues Python reconstruye la respuesta desde el recorte en vez de confiar en
+que el modelo copie bien las millas; si la IA falla o elige un id inexistente,
+cae a la regla de menos millas y lo avisa. El endpoint /buscar ya devuelve la
+recomendacion masticada en lugar del crudo. Se suman tests, dos sin red y uno
+que pega contra Groq de verdad.
+
+Se deja escrita la renovacion automatica del token de Aerolineas, que sale de
+POST /v1/auth/token con un client_secret que Juan tiene que cargar, para no
+pegarlo a mano cada 24 horas. Queda sin enganchar al flujo hasta poder probarlo.
+
+De paso se corrige la bitacora, que truncaba los resumenes porque gpt-oss gasta
+tokens razonando: se sube max_tokens y se agrega reasoning_effort bajo, el mismo
+arreglo que ya se habia hecho en el resto del proyecto.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+
+Se añadió el paquete ia/ con los módulos recorte.py y analisis_ia.py para reducir la respuesta cruda de la aerolínea a los datos esenciales, asignar IDs estables a cada tarifa y delegar la selección de la mejor opción a Groq, reconstruyendo luego la respuesta completa y garantizando un fallback a la regla de menos millas. Además, se implementó la lógica de renovación automática del token de Aerolíneas (renovar_token.py y actualización en token_aerolineas.py) y se adaptó el endpoint /buscar para devolver la recomendación procesada; se añadieron tests unitarios y de integración, y se ajustaron configuraciones de token y logging.
+
