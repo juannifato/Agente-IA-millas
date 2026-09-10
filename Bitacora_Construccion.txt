@@ -171,3 +171,26 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se actualizó el README para documentar el endpoint de búsqueda de aerolíneas, detallando todos sus parámetros y la estructura real de la respuesta, donde `brandedOffers` es un diccionario con claves “0” y “1” y las millas aparecen en `offers[].
 
+----------------------------------------------------------------
+[10/09/2026 18:18] commit d999b57 - juannifato
+Mensaje: docs: agregar CLAUDE.md con el contexto completo del proyecto
+
+Claude Code carga este archivo solo al abrir una sesion en la
+carpeta, asi que sirve para retomar el trabajo desde otra
+conversacion sin perder nada. Hacia falta porque la memoria de las
+sesiones anteriores quedo asociada a C:\Users\juann y no se carga al
+abrir Claude Code parado dentro del repositorio.
+
+Documenta el estado de las siete fases, la forma de trabajo acordada
+con Juan, la trampa del alias de Microsoft Store que tapa el comando
+python en este equipo, el mapa del repositorio y el contrato de la
+API. Incluye ademas los seis problemas que ya costaron tiempo, para
+no volver a tropezar con ellos, y la lista de pendientes concretos:
+el recorte del JSON que necesita la Fase 4, el truncado de los
+resumenes de la bitacora, la unidad de los impuestos y la
+automatizacion del token de Aerolineas.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se añadió el archivo CLAUDE.md, que contiene la documentación completa del proyecto Agente Millas IA: descripción de las siete fases, la forma de trabajo con Juan, la trampa del alias de Microsoft Store que oculta el comando python, el mapa del repositorio y el contrato de la API. Además se listan los seis problemas que ya consumieron tiempo y las tareas pendientes (recorte del JSON para la fase 4, truncado de los resúmenes de la bitácora, unidad de los impuestos y automatización del token de Aerolíneas). El objetivo es que Claude Code cargue este contexto al iniciar una sesión en la carpeta y evitar perder información ni volver a tropezar con los mismos inconvenientes.
+
