@@ -141,3 +141,33 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se integró el extractor con la API real de Aerolíneas Argentinas, armando la URL con los parámetros `leg` y `awardBooking=true` y leyendo el token Bearer desde la variable `AEROLINEAS_TOKEN` del .env. Además, el endpoint `POST /buscar` ahora acepta `fecha_vuelta` y `adultos` como opcionales, con validaciones que impiden fechas de regreso anteriores a la ida y limitan la cantidad de pasajeros entre 1 y 9, devolviendo códigos HTTP específicos (400, 502, 503) según el tipo de error. También se añadieron configuraciones y mejoras en la clase base del scraper y se actualizó la documentación de entorno.
 
+----------------------------------------------------------------
+[09/09/2026 22:29] commit 5631c88 - juannifato
+Mensaje: docs: documentar la API de Aerolineas tras la primera busqueda real
+
+Primera consulta real exitosa contra la API: HTTP 200 con 243 KB de
+datos, 19 vuelos y 137 combinaciones de vuelo y tarifa para un
+AEP-BRC ida y vuelta. El extractor de la Fase 3 queda funcionando de
+punta a punta.
+
+Se documenta en el README el endpoint con todos sus parametros y la
+forma de la respuesta, que no es la esperable: brandedOffers no es
+una lista sino un diccionario con las claves "0" y "1" para ida y
+vuelta, y las millas viajan en offers[].fare.baseFare con los
+impuestos aparte en fare.taxes.
+
+Confirmado ademas que el shoppingId de la URL del navegador no hace
+falta mandarlo, porque lo genera la propia API y vuelve dentro de
+searchMetadata, y que el token es anonimo: la web muestra precios en
+millas sin iniciar sesion, con lo que el sistema va a poder funcionar
+desatendido en Render una vez que se automatice su obtencion.
+
+Se mide el ruido de la respuesta de cara a la Fase 4: fareRules y
+combinableOffers suman 180 KB inutiles para comparar vuelos, y
+quedarse con lo esencial reduce el JSON un 86%. Mandarle el crudo a
+la IA seria lento, caro y menos preciso.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se actualizó el README para documentar el endpoint de búsqueda de aerolíneas, detallando todos sus parámetros y la estructura real de la respuesta, donde `brandedOffers` es un diccionario con claves “0” y “1” y las millas aparecen en `offers[].
+
