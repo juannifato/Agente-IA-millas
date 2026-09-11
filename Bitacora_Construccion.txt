@@ -265,3 +265,26 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se reforzó el contrato de la API para que la aplicación de escritorio en Visual Basic reciba siempre respuestas JSON, incluso en errores 404 y 405, y se añadieron pruebas que cubren validaciones de entrada, búsquedas sin resultados y cambios de formato de Aerolíneas. Además, se incorporó soporte para vuelos solo de ida en los tests de endpoints y se creó un script (correr_todo.py) que ejecuta toda la suite de pruebas saltándose el test que requiere la clave de Groq cuando no está disponible. Finalmente, se documentó la integración de la Fase 5 con una guía detallada y un cliente de referencia en VB.NET, indicando cómo instalar el SDK de .NET.
 
+----------------------------------------------------------------
+[10/09/2026 23:04] commit d62de89 - juannifato
+Mensaje: Descartar tarifas dominadas del recorte y cerrar la validacion de la Fase 4
+
+Al probar el recorte contra una busqueda real de Aerolineas aparecio que la
+respuesta de ida y vuelta repite cada tarifa de ida una vez por cada combinacion
+posible con la vuelta: un mismo vuelo, con la misma marca y la misma clase, viene
+varias veces con distinto costo, lo que inflaba a 119 las opciones que se le
+mandaban a la IA. Se agrega un filtro que descarta las tarifas dominadas, las que
+tienen mas millas y mas impuestos que otra del mismo vuelo, y deja solo la
+frontera de conveniencia. En la busqueda medida eso bajo de 119 a 26 opciones sin
+cambiar la eleccion final. El filtro es seguro porque se confirmo que los
+impuestos son aditivos por tramo: un mismo vuelo cuesta lo mismo en la busqueda de
+solo ida que en la de ida y vuelta, de modo que sumar ida mas vuelta da el total
+correcto.
+
+De paso se documenta que los impuestos estan en pesos argentinos enteros, no en
+centavos, cerrando una duda que estaba abierta, y se cubre el filtro con un test.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se implementó un filtro que elimina las tarifas dominadas en el proceso de recorte, descartando aquellas que tienen más millas y más impuestos que otra opción del mismo vuelo, de modo que solo se mantiene la frontera de conveniencia y se reduce drásticamente la cantidad de combinaciones enviadas a la IA. Además, se documentó que los impuestos se expresan en pesos argentinos enteros y se añadió un test que cubre este nuevo filtro, garantizando que la validación de la Fase 4 sea correcta.
+
