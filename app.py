@@ -14,6 +14,7 @@ from datetime import date, datetime
 
 from flask import Flask, jsonify, request
 
+import aeropuertos
 import scrapers
 from config import DEBUG, PORT
 from ia import ErrorRecorte, recortar
@@ -94,6 +95,13 @@ def salud():
 @app.get("/aerolineas")
 def aerolineas():
     return jsonify({"ok": True, "aerolineas": scrapers.catalogo()})
+
+
+@app.get("/aeropuertos")
+def listar_aeropuertos():
+    # La app de escritorio lo pide al arrancar para el autocompletado de origen
+    # y destino (escribir "bariloche" y que sugiera BRC).
+    return jsonify({"ok": True, "aeropuertos": aeropuertos.catalogo()})
 
 
 @app.post("/buscar")

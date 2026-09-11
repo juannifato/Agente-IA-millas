@@ -99,6 +99,14 @@ def main() -> int:
     caso("/aerolineas -> 200 con al menos una aerolinea",
          r.status_code == 200 and len(j["aerolineas"]) >= 1)
 
+    r = cli.get("/aeropuertos")
+    j = r.get_json()
+    ciudades = {a["ciudad"] for a in j.get("aeropuertos", [])}
+    caso("/aeropuertos -> 200 con la lista", r.status_code == 200 and len(j["aeropuertos"]) >= 1)
+    codigos_bue = {a["iata"] for a in j["aeropuertos"] if a["ciudad"] == "Buenos Aires"}
+    caso("/aeropuertos -> Buenos Aires trae AEP y EZE",
+         {"AEP", "EZE"}.issubset(codigos_bue))
+
     # --- errores HTTP: siempre JSON, nunca HTML ---
     r = cli.get("/ruta-que-no-existe")
     caso("404 devuelve JSON con motivo",

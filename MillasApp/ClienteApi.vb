@@ -108,6 +108,34 @@ Public Class Aerolinea
     Public Property nombre As String
 End Class
 
+Public Class RespuestaAeropuertos
+    Public Property ok As Boolean
+    Public Property aeropuertos As List(Of Aeropuerto)
+End Class
+
+Public Class Aeropuerto
+    Public Property iata As String
+    Public Property ciudad As String
+    Public Property pais As String
+    Public Property nombre As String
+
+    ' Lo que se ve en la lista desplegable, al estilo del sitio de Aerolineas:
+    ' "Buenos Aires, Argentina (AEP)".
+    Public ReadOnly Property Display As String
+        Get
+            Return $"{ciudad}, {pais} ({iata})"
+        End Get
+    End Property
+
+    ' Texto sobre el que filtra el autocompletado: sirve escribir el codigo,
+    ' la ciudad, el pais o el nombre del aeropuerto.
+    Public ReadOnly Property Buscar As String
+        Get
+            Return $"{iata} {ciudad} {pais} {nombre}".ToUpper()
+        End Get
+    End Property
+End Class
+
 Public Class ClienteApi
     ' HttpClient se instancia UNA sola vez y se reutiliza: crear uno por request
     ' agota los sockets del sistema.
@@ -134,5 +162,11 @@ Public Class ClienteApi
         Dim texto As String = Await http.GetStringAsync(BaseUrl & "/aerolineas")
         Dim r As RespuestaAerolineas = JsonSerializer.Deserialize(Of RespuestaAerolineas)(texto, opciones)
         Return If(r?.aerolineas, New List(Of Aerolinea)())
+    End Function
+
+    Public Shared Async Function AeropuertosAsync() As Task(Of List(Of Aeropuerto))
+        Dim texto As String = Await http.GetStringAsync(BaseUrl & "/aeropuertos")
+        Dim r As RespuestaAeropuertos = JsonSerializer.Deserialize(Of RespuestaAeropuertos)(texto, opciones)
+        Return If(r?.aeropuertos, New List(Of Aeropuerto)())
     End Function
 End Class
