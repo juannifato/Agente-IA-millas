@@ -333,3 +333,27 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se implementó un buscador de aeropuertos que, al iniciar la aplicación, consulta al backend el endpoint GET /aeropuertos y permite filtrar por ciudad o código IATA mediante autocompletado, mostrando resultados como “Buenos Aires, Argentina (AEP)”. Además, se sustituyeron los campos de fechas individuales por un calendario de rango con selección de ida y vuelta (o solo ida) y se actualizó la interfaz a una paleta de colores violetas y lilas para diferenciarla del estilo azul anterior.
 
+----------------------------------------------------------------
+[11/09/2026 19:07] commit 7a261c4 - juannifato
+Mensaje: Sumar el cerebro conversacional del chat con guardrails (paso A)
+
+Arranca el agente de chat. El modulo ia/conversacion.py hace de recepcionista:
+lee lo que el usuario escribe en criollo, le pide a Groq que saque origen,
+destino, fechas y pasajeros, y decide si ya puede buscar o si tiene que
+repreguntar. Tiene guardrails estrictos: si le preguntan algo que no es buscar
+vuelos en millas, no contesta el tema y redirige. Cuando el pedido esta claro
+busca directo; si hay una ciudad con dos aeropuertos, como Buenos Aires, o falta
+un dato, repregunta. Nunca revienta: cualquier falla se traduce a un mensaje
+amable. Se expone en el endpoint POST /chat, al que el cliente le manda el estado
+de la charla en cada mensaje porque Flask no guarda sesion.
+
+Para que el chat reuse la misma busqueda que el formulario sin duplicar, se
+extrae la orquestacion (scraper, recorte, eleccion) a busqueda.py, y la llamada
+a Groq, que estaba repetida, a un cliente comun ia/groq_cliente.py que ahora usa
+tambien analisis_ia. Se cubre el chat con tests de guardrail, falta de datos y
+ambiguedad, que se resuelven sin tocar la aerolinea.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se implementó un módulo de conversación (ia/conversacion.py) que actúa como recepcionista del chat, interpreta el mensaje del usuario en lenguaje coloquial, extrae origen, destino, fechas y pasajeros mediante Groq, y gestiona guardrails para asegurar que solo se atiendan consultas de vuelos en millas, redirigiendo o repreguntando cuando falten datos o haya ambigüedad. Además, se refactorizó la lógica de orquestación de búsqueda a busqueda.py y se centralizó la comunicación con Groq en ia/groq_cliente.py, reutilizando el cliente también para análisis IA, permitiendo que el endpoint POST /chat reutilice la misma búsqueda que el formulario sin duplicar código. Se añadieron pruebas unitarias que cubren los guardrails, la falta de datos y la ambigüedad en las consultas.
+
