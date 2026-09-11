@@ -15,10 +15,10 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Visual Studio / VB.NET (Fase 5)
-frontend-vb/**/bin/
-frontend-vb/**/obj/
-frontend-vb/.vs/
+# Visual Studio / .NET / WPF (Fase 5) - la app de escritorio es MillasApp/
+**/bin/
+**/obj/
+.vs/
 *.user
 
 # Temporales
