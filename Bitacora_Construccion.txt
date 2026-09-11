@@ -288,3 +288,25 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se implementó un filtro que elimina las tarifas dominadas en el proceso de recorte, descartando aquellas que tienen más millas y más impuestos que otra opción del mismo vuelo, de modo que solo se mantiene la frontera de conveniencia y se reduce drásticamente la cantidad de combinaciones enviadas a la IA. Además, se documentó que los impuestos se expresan en pesos argentinos enteros y se añadió un test que cubre este nuevo filtro, garantizando que la validación de la Fase 4 sea correcta.
 
+----------------------------------------------------------------
+[11/09/2026 17:57] commit 21325b8 - juannifato
+Mensaje: Armar la interfaz de escritorio en WPF con Visual Basic (Fase 5)
+
+Se agrega MillasApp, la aplicacion de escritorio que consume el backend. Es un
+proyecto WPF en VB.NET porque no hay Visual Studio en la maquina: alcanza con el
+SDK de .NET y su CLI. La ventana toma origen, destino, fechas, cantidad de
+adultos y aerolinea, le pega al endpoint /buscar y muestra la recomendacion en
+una grilla, con el resumen de millas mas impuestos y el analisis que redacta la
+IA. Al abrirse pide la lista de aerolineas al backend para llenar el combo solo.
+
+La logica de red y los modelos viven en ClienteApi.vb, separados de la ventana:
+un unico HttpClient reutilizado, System.Text.Json para deserializar, y las tres
+formas de respuesta contempladas (recomendacion con datos, busqueda sin
+resultados, y error con motivo, que se muestran distinto). Si el backend esta
+apagado la app no se rompe: avisa y deja reintentar. Compila sin errores y se
+probo que abre y se conecta; los binarios bin/obj quedan fuera del repo.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se añadió una nueva aplicación de escritorio llamada MillasApp, desarrollada en WPF con VB.NET, que actúa como cliente del backend Flask para buscar vuelos por millas. La interfaz permite ingresar origen, destino, fechas, número de adultos y aerolínea, consulta el endpoint /buscar y muestra en una tabla la recomendación con el total de millas más impuestos y el análisis generado por la IA. Además, incluye lógica de red reutilizando un HttpClient y maneja los tres tipos de respuesta del backend (recomendación, sin resultados y error), mostrando mensajes apropiados y permitiendo reintentar si el servidor está fuera de línea.
+
