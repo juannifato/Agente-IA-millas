@@ -96,6 +96,42 @@ def _primero(dic: dict, *claves):
     return None
 
 
+def _pareto(tarifas: list) -> list:
+    """Descarta las tarifas dominadas de un mismo vuelo.
+
+    Una tarifa esta dominada si otra del mismo vuelo cuesta menos (o igual) en
+    millas Y menos (o igual) en impuestos, con al menos una de las dos
+    estrictamente menor. Nadie elegiria una tarifa que tiene otra mejor o igual
+    en las dos cosas, asi que solo hacen ruido: la busqueda de Aerolineas ida y
+    vuelta trae muchas (un mismo vuelo con la misma marca y clase repetido con
+    distinto costo, artefacto de las combinaciones con la vuelta).
+
+    Quedan solo las opciones donde para pagar menos millas hay que poner mas
+    plata (y al reves), que son las unicas entre las que tiene sentido decidir.
+    En una medicion real esto bajo de 119 a 26 opciones sin perder ninguna
+    conveniente. Requiere que `impuestos` sea aditivo por tramo, cosa confirmada:
+    el mismo vuelo cuesta lo mismo en la busqueda de solo ida que en ida y vuelta.
+    """
+    vivas = []
+    for i, a in enumerate(tarifas):
+        a_millas, a_imp = a["millas"], a.get("impuestos") or 0
+        dominada = False
+        for j, b in enumerate(tarifas):
+            if i == j:
+                continue
+            b_millas, b_imp = b["millas"], b.get("impuestos") or 0
+            mejor_o_igual = b_millas <= a_millas and b_imp <= a_imp
+            estrictamente = b_millas < a_millas or b_imp < a_imp
+            # Ante un empate exacto en millas e impuestos se conserva una sola:
+            # la de indice menor (`j < i`), asi no sobreviven duplicados iguales.
+            if mejor_o_igual and (estrictamente or j < i):
+                dominada = True
+                break
+        if not dominada:
+            vivas.append(a)
+    return vivas
+
+
 def _recortar_vuelo(oferta: dict, id_base: str) -> dict | None:
     """Convierte una oferta de la aerolinea en una fila comparable."""
     legs = oferta.get("legs") or []
@@ -141,16 +177,17 @@ def _recortar_vuelo(oferta: dict, id_base: str) -> dict | None:
             "id": f"{id_base}.{i}",
             "tarifa": (tarifa.get("brand") or {}).get("name"),
             "millas": millas,
-            # `taxes` viene como entero (ej. 64022) y falta confirmar si son
-            # centavos o pesos enteros, asi que se pasa tal cual y no se
-            # convierte a nada que despues haya que desandar.
+            # `taxes` es un monto en pesos argentinos enteros, por tramo (no
+            # arrastra la vuelta). Se pasa tal cual, sin convertir a nada.
             "impuestos": _primero(fare, "taxes"),
             "asientos": asientos,
         })
 
     if not tarifas:
         return None
-    vuelo["tarifas"] = tarifas
+    # Se descartan las tarifas dominadas: a la IA solo le llegan las que son
+    # una opcion real (ver _pareto). Los ids conservan su numero original.
+    vuelo["tarifas"] = _pareto(tarifas)
     return vuelo
 
 

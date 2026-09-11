@@ -19,7 +19,7 @@ de tier gratuito y sin tarjeta de crédito. Ante dos opciones, va la gratuita.
 | 1 — Entorno, repo y auto-bitácora | ✅ probada |
 | 2 — Cuentas Groq + Render | ✅ Groq verificado. **Render sin verificar** (se prueba en la Fase 6) |
 | 3 — Motor de extracción | ✅ **búsqueda real funcionando** |
-| 4 — Cerebro analítico (IA) | ✅ recorte + análisis probados (con datos reales de Aerolíneas **falta validar**, el token estaba vencido) |
+| 4 — Cerebro analítico (IA) | ✅ **validada con datos reales** (recorte fiel + filtro de dominadas + IA eligiendo bien entre opciones reales) |
 | 5 — Interfaz Visual Basic | ⬅️ **acá vamos** |
 | 6 — Deploy en Render | pendiente |
 | 7 — Más aerolíneas | la estructura ya está lista |
@@ -219,10 +219,19 @@ Se construyó y probó el cerebro analítico:
   del token). Tests en `tests/`: `test_recorte.py` y `test_analisis.py` no usan
   red (se corren siempre); `test_endpoint.py` pega contra Groq de verdad.
 
-**Lo que falta de la Fase 4:** validar el recorte contra la respuesta **real** de
-Aerolíneas. Los nombres de campo salen del README, no de datos verdaderos, y no
-se pudo probar porque el token estaba vencido. Apenas haya token vigente: correr
-una búsqueda real y confirmar que `recortar()` no tira nada importante.
+**Validación hecha (2026-09-10)** con token vigente, búsqueda real AEP-BRC ida y
+vuelta: el recorte resultó fiel (9 y 10 vuelos con millas, ninguno perdido), y la
+IA eligió bien entre las opciones reales en ~1.5s. Dos cosas que salieron de ahí:
+
+- **`taxes` resuelto:** son **pesos argentinos enteros** (no centavos) y **por
+  tramo** (no arrastra la vuelta), así que sumar ida + vuelta está bien. Se
+  verificó comparando la búsqueda de solo ida contra la de ida y vuelta: el mismo
+  vuelo cuesta lo mismo en las dos.
+- **Filtro de dominadas (Pareto) implementado** en `ia/recorte.py`: la búsqueda de
+  ida y vuelta repite cada tarifa de ida por cada combinación con la vuelta (mismo
+  vuelo, misma marca, distinto costo). El filtro descarta las que tienen más millas
+  *y* más impuestos que otra del mismo vuelo. Bajó de 119 a 26 opciones reales sin
+  cambiar la elección final. Cubierto en `tests/test_recorte.py`.
 
 ### Lo que sigue: Fase 5 (Visual Basic)
 

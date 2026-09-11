@@ -159,8 +159,17 @@ de vuelo y tarifa):
 Por eso la Fase 4 **no le puede mandar el JSON crudo a la IA**: hay que recortarlo
 antes. Es más rápido, más barato y con menos ruido el modelo acierta más.
 
-Detalle a confirmar: `taxes` viene como entero (ej. `64022`) y falta determinar si
-son centavos o pesos enteros.
+Sobre `taxes` (confirmado con datos reales): es un monto en **pesos argentinos
+enteros** (no centavos) y es **por tramo** —no arrastra la vuelta—, así que sumar
+ida + vuelta da el total correcto. Se verificó porque un mismo vuelo cuesta lo
+mismo en la búsqueda de solo ida que en la de ida y vuelta.
+
+En una búsqueda de ida y vuelta, la API **repite** cada tarifa de ida una vez por
+cada combinación posible con la vuelta: un mismo vuelo con la misma marca y clase
+aparece varias veces con distinto costo. Por eso el recorte, dentro de cada vuelo,
+descarta las tarifas **dominadas** (las que tienen más millas *y* más impuestos que
+otra del mismo vuelo) y deja solo la frontera de conveniencia. En una medición real
+eso bajó de 119 a 26 opciones sin perder ninguna que valga la pena.
 
 ## Respuesta de `POST /buscar` (lo que consume Visual Basic)
 
