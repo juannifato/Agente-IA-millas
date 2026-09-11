@@ -310,3 +310,26 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se añadió una nueva aplicación de escritorio llamada MillasApp, desarrollada en WPF con VB.NET, que actúa como cliente del backend Flask para buscar vuelos por millas. La interfaz permite ingresar origen, destino, fechas, número de adultos y aerolínea, consulta el endpoint /buscar y muestra en una tabla la recomendación con el total de millas más impuestos y el análisis generado por la IA. Además, incluye lógica de red reutilizando un HttpClient y maneja los tres tipos de respuesta del backend (recomendación, sin resultados y error), mostrando mensajes apropiados y permitiendo reintentar si el servidor está fuera de línea.
 
+----------------------------------------------------------------
+[11/09/2026 18:51] commit ec8505b - juannifato
+Mensaje: Autocompletado de aeropuertos, calendario de rango y paleta violeta
+
+Se suma el buscador de aeropuertos por ciudad. El backend expone GET /aeropuertos
+con una lista curada de las estaciones que opera Aerolineas (la API no da un
+endpoint publico para esto: los candidatos probados dieron 404), cada una con
+codigo, ciudad, pais y nombre. La app la pide al arrancar y filtra a medida que
+se escribe, asi el usuario pone "bariloche" y aparece BRC, o "buenos aires" y
+aparecen AEP y EZE, mostrandolas al estilo del sitio: "Buenos Aires, Argentina
+(AEP)". El codigo IATA se sigue pudiendo escribir a mano.
+
+Las dos fechas separadas se reemplazan por un calendario de rango que se
+despliega desde un campo, con modo ida y vuelta (se toca la ida, se ve el rango
+tentativo al mover el mouse, y se toca la vuelta) o solo ida. Y se cambia toda
+la paleta a violetas y lilas para diferenciar la app del azul de las aerolineas.
+Queda pendiente que el resaltado del rango del calendario tome el violeta, que
+todavia se ve azul.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se implementó un buscador de aeropuertos que, al iniciar la aplicación, consulta al backend el endpoint GET /aeropuertos y permite filtrar por ciudad o código IATA mediante autocompletado, mostrando resultados como “Buenos Aires, Argentina (AEP)”. Además, se sustituyeron los campos de fechas individuales por un calendario de rango con selección de ida y vuelta (o solo ida) y se actualizó la interfaz a una paleta de colores violetas y lilas para diferenciarla del estilo azul anterior.
+
