@@ -15,10 +15,11 @@ from datetime import date, datetime
 from flask import Flask, jsonify, request
 
 import aeropuertos
+import busqueda
 import scrapers
 from config import DEBUG, PORT
-from ia import ErrorRecorte, recortar
-from ia.analisis_ia import ErrorIA, analizar
+from ia import ErrorRecorte, conversacion
+from ia.analisis_ia import ErrorIA
 from scrapers.base import ErrorScraper
 
 app = Flask(__name__)
@@ -142,8 +143,8 @@ def buscar():
     }
 
     try:
-        extractor = scrapers.obtener(clave)
-        crudo = extractor.buscar(origen, destino, fecha_iso, fecha_vuelta_iso, adultos)
+        resultado = busqueda.buscar_vuelos(
+            origen, destino, fecha_iso, fecha_vuelta_iso, adultos, clave)
     except ErrorScraper as e:
         # Cada motivo dice de quien es el problema, y el codigo HTTP debe
         # coincidir: 400 si los datos que llegaron estan mal, 503 si al backend
@@ -153,46 +154,53 @@ def buscar():
             "falta_token": 503,
             "token_vencido": 503,
         }.get(e.motivo, 502)
-        return jsonify({
-            "ok": False,
-            "motivo": e.motivo,
-            "error": str(e),
-            "consulta": consulta,
-        }), codigo
-
-    # Fase 4: recortar el crudo (el 74% es ruido) y que la IA elija la mejor.
-    try:
-        recortado = recortar(crudo)
+        return jsonify({"ok": False, "motivo": e.motivo, "error": str(e),
+                        "consulta": consulta}), codigo
     except ErrorRecorte as e:
         # Si el recorte falla es porque la aerolinea cambio la forma de su
         # respuesta: el problema es de ellos, no de los datos del cliente.
         return jsonify({"ok": False, "motivo": e.motivo, "error": str(e),
                         "consulta": consulta}), 502
-
-    # Sin vuelos en millas no hay nada que analizar: no se gasta una llamada a
-    # la IA y se responde 200 (la busqueda salio bien, solo que dio vacia).
-    if recortado["total_opciones"] == 0:
-        return jsonify({
-            "ok": True, "consulta": consulta, "mejor": None,
-            "mensaje": "No se encontraron vuelos en millas para esas fechas.",
-        })
-
-    try:
-        analisis = analizar(recortado)
     except ErrorIA as e:
         # 503 si al backend le falta la clave de Groq; 502 si Groq fallo.
         codigo = 503 if e.motivo == "falta_clave_groq" else 502
         return jsonify({"ok": False, "motivo": e.motivo, "error": str(e),
                         "consulta": consulta}), codigo
 
+    if resultado["vacio"]:
+        # La busqueda salio bien pero vino vacia: 200 con mejor null.
+        return jsonify({
+            "ok": True, "consulta": consulta, "mejor": None,
+            "mensaje": "No se encontraron vuelos en millas para esas fechas.",
+        })
+
     return jsonify({
         "ok": True,
         "consulta": consulta,
-        "mejor": analisis["mejor"],
-        "analisis": analisis["analisis"],
-        "eleccion_por_ia": analisis["eleccion_por_ia"],
-        "opciones_evaluadas": recortado["total_opciones"],
+        "mejor": resultado["mejor"],
+        "analisis": resultado["analisis"],
+        "eleccion_por_ia": resultado["eleccion_por_ia"],
+        "opciones_evaluadas": resultado["opciones_evaluadas"],
     })
+
+
+@app.post("/chat")
+def chat():
+    # El agente conversacional: el usuario escribe en criollo y aca se entiende
+    # el pedido y, si alcanza, se busca. El estado de la charla lo manda el
+    # cliente en cada mensaje (Flask no guarda sesion).
+    cuerpo = request.get_json(silent=True)
+    if not isinstance(cuerpo, dict):
+        return jsonify({"ok": False, "motivo": "cuerpo_invalido",
+                        "error": "Se esperaba un cuerpo JSON con 'mensaje'."}), 400
+    estado = cuerpo.get("estado")
+    resultado = conversacion.conversar(
+        cuerpo.get("mensaje", ""),
+        estado if isinstance(estado, dict) else None,
+    )
+    # Siempre 200: el chat responde con texto aunque algo haya fallado (el
+    # motivo va igual dentro, por si el frontend quiere reaccionar).
+    return jsonify({"ok": True, **resultado})
 
 
 @app.errorhandler(404)

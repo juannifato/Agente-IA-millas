@@ -19,6 +19,7 @@ SUITE = [
     ("tests.test_analisis", False),
     ("tests.test_contrato", False),
     ("tests.test_endpoint", True),
+    ("tests.test_chat", True),
 ]
 
 

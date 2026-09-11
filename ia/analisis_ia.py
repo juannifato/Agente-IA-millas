@@ -15,9 +15,7 @@ gpt-oss razona antes de escribir: por eso `max_tokens` holgado y
 """
 import json
 
-import requests
-
-from config import GROQ_API_KEY, GROQ_BASE_URL, GROQ_MODEL, TIMEOUT, USER_AGENT
+from ia.groq_cliente import ErrorGroq, pedir_json
 
 
 class ErrorIA(Exception):
@@ -128,59 +126,6 @@ def _construir_mejor(recortado: dict, elecciones: dict) -> tuple[dict, bool]:
     return mejor, uso_regla
 
 
-def _pedir_a_groq(mensajes: list) -> dict:
-    """Una llamada a Groq. Devuelve el JSON parseado o levanta ErrorIA."""
-    try:
-        r = requests.post(
-            f"{GROQ_BASE_URL}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {GROQ_API_KEY}",
-                "Content-Type": "application/json",
-                # El Cloudflare de Groq rechaza User-Agent genericos de librerias.
-                "User-Agent": USER_AGENT,
-            },
-            timeout=TIMEOUT,
-            json={
-                "model": GROQ_MODEL,
-                "max_tokens": 1024,
-                "reasoning_effort": "low",
-                "temperature": 0,
-                "response_format": {"type": "json_object"},
-                "messages": mensajes,
-            },
-        )
-    except requests.Timeout as e:
-        raise ErrorIA("Groq tardo demasiado en responder.", "ia_timeout") from e
-    except requests.RequestException as e:
-        raise ErrorIA(f"No se pudo conectar con Groq: {e}", "ia_sin_conexion") from e
-
-    if r.status_code == 401:
-        raise ErrorIA("Groq rechazo la clave (GROQ_API_KEY).", "ia_clave_invalida")
-    if r.status_code == 429:
-        raise ErrorIA("Groq: demasiadas consultas seguidas, esperar un momento.",
-                      "ia_limite")
-    if r.status_code != 200:
-        raise ErrorIA(f"Groq respondio con codigo {r.status_code}: {r.text[:200]}",
-                      "ia_error")
-
-    try:
-        cuerpo = r.json()
-        contenido = cuerpo["choices"][0]["message"]["content"]
-    except (ValueError, KeyError, IndexError) as e:
-        raise ErrorIA("Groq devolvio una respuesta con forma inesperada.",
-                      "ia_sin_respuesta") from e
-
-    if not contenido or not contenido.strip():
-        # Sintoma clasico de gpt-oss sin presupuesto: gasto todo razonando.
-        raise ErrorIA("Groq devolvio una respuesta vacia (posible falta de tokens).",
-                      "ia_sin_respuesta")
-
-    try:
-        return json.loads(contenido)
-    except json.JSONDecodeError as e:
-        raise ErrorIA("Groq no devolvio un JSON valido.", "ia_json_invalido") from e
-
-
 def analizar(recortado: dict) -> dict:
     """Elige la tarifa mas conveniente por tramo.
 
@@ -194,10 +139,6 @@ def analizar(recortado: dict) -> dict:
     Raises:
         ErrorIA: si falta la clave o Groq no responde utilmente.
     """
-    if not GROQ_API_KEY or "pegar_aca" in GROQ_API_KEY:
-        raise ErrorIA("Falta la clave de Groq (GROQ_API_KEY en el .env).",
-                      "falta_clave_groq")
-
     nombres = [t["tramo"] for t in recortado.get("tramos", [])]
     mensajes = [
         {"role": "system", "content": INSTRUCCIONES},
@@ -207,7 +148,10 @@ def analizar(recortado: dict) -> dict:
         )},
     ]
 
-    data = _pedir_a_groq(mensajes)
+    try:
+        data = pedir_json(mensajes)
+    except ErrorGroq as e:
+        raise ErrorIA(str(e), e.motivo) from e
 
     elecciones = {}
     for item in data.get("tramos", []):
