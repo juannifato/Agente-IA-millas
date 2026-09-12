@@ -11,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import app as appmod
+import busqueda
 import scrapers
 from scrapers.base import Scraper
 from tests.datos_muestra import CRUDO, CRUDO_SOLO_IDA
@@ -26,6 +27,7 @@ def usar_scraper(crudo):
             return crudo
 
     appmod.scrapers.obtener = lambda clave: Falso()
+    busqueda.limpiar_cache()   # que un caso no se lleve el crudo cacheado de otro
 
 
 def main() -> int:

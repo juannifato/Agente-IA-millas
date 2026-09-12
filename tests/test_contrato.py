@@ -12,6 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import app as appmod
+import busqueda
 import scrapers
 from scrapers.base import Scraper
 from tests.datos_muestra import CRUDO_ROTO, CRUDO_VACIO
@@ -29,11 +30,13 @@ def usar_scraper(crudo):
             return crudo
 
     appmod.scrapers.obtener = lambda clave: Falso()
+    busqueda.limpiar_cache()   # cada caso reusa la misma consulta con otro crudo
 
 
 def usar_scraper_real():
     """Restaura el ruteo real (para probar, ej., aerolinea desconocida)."""
     appmod.scrapers.obtener = _OBTENER_ORIGINAL
+    busqueda.limpiar_cache()
 
 
 def main() -> int:

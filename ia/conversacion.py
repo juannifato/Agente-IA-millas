@@ -59,14 +59,24 @@ def _instrucciones(hoy: date) -> str:
         '{"accion": "buscar|faltan_datos|aclarar|fuera_de_tema", '
         '"origen": "<IATA o null>", "destino": "<IATA o null>", '
         '"fecha": "<DD/MM/AAAA o null>", "fecha_vuelta": "<DD/MM/AAAA o null>", '
-        '"adultos": <numero>, "mensaje": "<lo que le decis, en rioplatense>"}\n'
+        '"adultos": <numero>, '
+        '"franja": "<madrugada|manana|mediodia|tarde|noche o null>", '
+        '"mensaje": "<lo que le decis, en rioplatense>"}\n'
         "Reglas de accion:\n"
         "- 'buscar': ya tenés origen, destino y fecha. En 'mensaje' confirmá corto "
         "que estas buscando.\n"
         "- 'faltan_datos': falta origen, destino o fecha de ida. Pedila.\n"
         "- 'aclarar': hay ambiguedad (varios aeropuertos para una ciudad). Preguntá.\n"
         "- 'fuera_de_tema': el pedido no es sobre buscar vuelos.\n"
-        "Si el estado previo ya trae datos, combinálos con el mensaje nuevo."
+        "Franja horaria: si el usuario menciona un horario para los vuelos ('a la "
+        "manana', 'de madrugada', 'al mediodia', 'de noche', 'temprano', 'mas tarde'), "
+        "normalizalo a una de: madrugada, manana, mediodia, tarde, noche (sin tilde), y "
+        "poné accion 'buscar' para volver a buscar con esa franja. Si no menciona "
+        "horario, franja null. IMPORTANTE: la franja se elige por la hora en que SALE "
+        "el vuelo, no la de llegada.\n"
+        "Si el estado previo ya trae datos (origen, destino, fechas, franja), "
+        "combinálos con el mensaje nuevo: un pedido como 'y a la manana?' cambia solo "
+        "la franja y mantiene el resto."
     )
 
 
@@ -90,6 +100,7 @@ def _estado_desde(data: dict) -> dict:
         "fecha": data.get("fecha") or None,
         "fecha_vuelta": data.get("fecha_vuelta") or None,
         "adultos": adultos if isinstance(adultos, int) and adultos >= 1 else 1,
+        "franja": data.get("franja") or None,
     }
 
 
@@ -154,13 +165,14 @@ def conversar(mensaje: str, estado: dict | None = None, hoy: date | None = None)
     consulta = {
         "origen": nuevo_estado["origen"], "destino": nuevo_estado["destino"],
         "fecha": fecha_iso, "fecha_vuelta": fecha_vuelta_iso,
-        "adultos": nuevo_estado["adultos"], "aerolinea": None,
+        "adultos": nuevo_estado["adultos"], "franja": nuevo_estado["franja"],
+        "aerolinea": None,
     }
 
     try:
         resultado = busqueda.buscar_vuelos(
             nuevo_estado["origen"], nuevo_estado["destino"], fecha_iso,
-            fecha_vuelta_iso, nuevo_estado["adultos"])
+            fecha_vuelta_iso, nuevo_estado["adultos"], franja=nuevo_estado["franja"])
     except (ErrorScraper, ErrorIA) as e:
         return _vacia(accion="error", estado=nuevo_estado, motivo=e.motivo,
                       consulta=consulta,
@@ -172,9 +184,14 @@ def conversar(mensaje: str, estado: dict | None = None, hoy: date | None = None)
                       respuesta=f"No pude completar la búsqueda ({e}).")
 
     if resultado["vacio"]:
+        if resultado.get("motivo_vacio") == "franja" and nuevo_estado["franja"]:
+            texto = (f"No encontré vuelos que salgan a la {nuevo_estado['franja']} "
+                     "para esas fechas. ¿Probás con otra franja u otra fecha?")
+        else:
+            texto = ("No encontré vuelos en millas para esas fechas. "
+                     "¿Probás con otra fecha?")
         return _vacia(accion="sin_resultados", estado=nuevo_estado, consulta=consulta,
-                      respuesta="No encontré vuelos en millas para esas fechas. "
-                                "¿Probás con otra fecha?")
+                      respuesta=texto)
 
     # Con resultado: se combina la confirmacion de la IA con el analisis.
     texto = (f"{mensaje_ia}\n" if mensaje_ia else "")

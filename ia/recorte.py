@@ -245,6 +245,54 @@ def recortar(crudo: dict) -> dict:
     return {"tramos": tramos, "total_opciones": total}
 
 
+# Franjas horarias por hora de salida (HH), en [desde, hasta). Se solapan a
+# proposito: "mediodia" comparte horas con "manana" y "tarde", porque asi lo
+# entiende la gente. La IA del chat normaliza el pedido a una de estas claves.
+_FRANJAS = {
+    "madrugada": (0, 6),
+    "manana": (6, 12),
+    "mediodia": (11, 15),
+    "tarde": (12, 19),
+    "noche": (19, 24),
+}
+
+
+def _hora_salida(sale) -> int | None:
+    """La hora (0-23) de una marca '2026-09-24T11:00'."""
+    try:
+        return int(sale[11:13])
+    except (TypeError, ValueError, IndexError):
+        return None
+
+
+def filtrar_por_franja(recortado: dict, franja: str) -> dict:
+    """Deja solo los vuelos que salen en la franja horaria pedida.
+
+    La franja aplica a cada tramo por separado (la ida a la manana y la vuelta a
+    la manana, por ejemplo). Si algun tramo se queda sin vuelos en esa franja, se
+    devuelve vacio con `sin_franja` para poder avisar "no hay a la manana", en vez
+    de mostrar cualquier cosa.
+
+    Si la franja no se reconoce, se devuelve el recorte sin tocar.
+    """
+    clave = (franja or "").strip().lower().replace("ñ", "n").replace("í", "i")
+    rango = _FRANJAS.get(clave)
+    if rango is None:
+        return recortado
+
+    desde, hasta = rango
+    tramos, total = [], 0
+    for tramo in recortado.get("tramos", []):
+        vuelos = [v for v in tramo["vuelos"]
+                  if (h := _hora_salida(v["sale"])) is not None and desde <= h < hasta]
+        if not vuelos:
+            return {"tramos": [], "total_opciones": 0, "sin_franja": clave}
+        total += sum(len(v["tarifas"]) for v in vuelos)
+        tramos.append({**tramo, "vuelos": vuelos})
+
+    return {"tramos": tramos, "total_opciones": total}
+
+
 def medir(crudo: dict, recortado: dict) -> dict:
     """Cuanto se achico el JSON. Sirve para verlo, no para decidir nada."""
     def bytes_de(dato):

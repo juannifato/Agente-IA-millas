@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from ia.recorte import medir, recortar
+from ia.recorte import filtrar_por_franja, medir, recortar
 from tests.datos_muestra import CRUDO
 
 
@@ -56,6 +56,26 @@ def main() -> int:
          millas_imp == [(5000, 64000), (8000, 40000)]),
         ("Pareto: se descarto la dominada (B) y el empate exacto (D)",
          all(t["impuestos"] != 221000 for t in tarifas_dom)),
+    ]
+
+    # --- filtro por franja horaria (para el refinamiento del chat) ---
+    rec_horas = {"tramos": [
+        {"tramo": "ida", "origen": "AEP", "destino": "BRC", "vuelos": [
+            {"numeros": ["AR1"], "sale": "2026-09-24T08:10", "tarifas": [{"id": "ida-1.1", "millas": 5000}]},
+            {"numeros": ["AR2"], "sale": "2026-09-24T15:30", "tarifas": [{"id": "ida-2.1", "millas": 6000}]}]},
+    ], "total_opciones": 2}
+    manana = filtrar_por_franja(rec_horas, "manana")
+    tarde = filtrar_por_franja(rec_horas, "tarde")
+    noche = filtrar_por_franja(rec_horas, "noche")
+    chequeos += [
+        ("franja manana: deja el vuelo de las 08 y descarta el de las 15",
+         [v["numeros"] for v in manana["tramos"][0]["vuelos"]] == [["AR1"]]),
+        ("franja tarde: deja el de las 15 y descarta el de las 08",
+         [v["numeros"] for v in tarde["tramos"][0]["vuelos"]] == [["AR2"]]),
+        ("franja sin vuelos avisa con 'sin_franja'",
+         noche["total_opciones"] == 0 and noche.get("sin_franja") == "noche"),
+        ("franja con tilde tambien se entiende ('mañana')",
+         filtrar_por_franja(rec_horas, "mañana")["total_opciones"] == 1),
     ]
 
     for txt, ok in chequeos:
