@@ -357,3 +357,24 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se implementó un módulo de conversación (ia/conversacion.py) que actúa como recepcionista del chat, interpreta el mensaje del usuario en lenguaje coloquial, extrae origen, destino, fechas y pasajeros mediante Groq, y gestiona guardrails para asegurar que solo se atiendan consultas de vuelos en millas, redirigiendo o repreguntando cuando falten datos o haya ambigüedad. Además, se refactorizó la lógica de orquestación de búsqueda a busqueda.py y se centralizó la comunicación con Groq en ia/groq_cliente.py, reutilizando el cliente también para análisis IA, permitiendo que el endpoint POST /chat reutilice la misma búsqueda que el formulario sin duplicar código. Se añadieron pruebas unitarias que cubren los guardrails, la falta de datos y la ambigüedad en las consultas.
 
+----------------------------------------------------------------
+[12/09/2026 17:21] commit 4e18246 - juannifato
+Mensaje: Refinar la busqueda por franja horaria desde el chat (paso C)
+
+Ahora el chat entiende pedidos de horario. Cuando el usuario dice "a la manana",
+"de madrugada", "al mediodia", la IA normaliza eso a una franja y vuelve a
+elegir dejando solo los vuelos que SALEN en ese rango; si un tramo se queda sin
+vuelos en la franja, avisa en vez de mostrar cualquier cosa. La franja se guarda
+en el estado de la charla, asi un simple "y a la manana?" cambia solo el horario
+y mantiene origen, destino y fechas.
+
+Para que encadenar refinamientos no dispare una consulta nueva a la aerolinea por
+cada uno, busqueda.py guarda en memoria el ultimo crudo de cada busqueda unos
+minutos: los pedidos de horario se resuelven filtrando sobre lo ya traido, que es
+justo lo que pide el limite acordado de no consultar de mas. Se cubre el filtro
+por franja con tests y se aisla el cache entre casos de prueba.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se implementó la capacidad de que el chat reconozca y normalice expresiones de franja horaria (como “a la mañana”, “de madrugada” o “al mediodía”) y filtre los vuelos ya obtenidos para mostrar solo aquellos que salen dentro del rango solicitado, manteniendo el resto del contexto (origen, destino y fechas). Además, se añadió un caché temporal en busqueda.py que conserva el último resultado bruto de cada búsqueda, evitando consultas repetidas a la aerolínea cuando se refinan criterios como el horario. Se incluyeron pruebas unitarias para validar el filtrado por franja y se aisló el caché entre casos de prueba.
+
