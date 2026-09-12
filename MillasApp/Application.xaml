@@ -1,9 +1,39 @@
-﻿<Application x:Class="Application"
+<Application x:Class="Application"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:MillasApp"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <!-- Estilo GLOBAL de los dias del calendario: el default los resalta en
+             azul, y aca se los pinta en violeta. Va en Application.Resources (no
+             en la ventana ni en el calendario) porque el calendario vive dentro
+             de un Popup, y solo los recursos globales llegan siempre ahi. -->
+        <Style TargetType="CalendarDayButton">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CalendarDayButton">
+                        <Border x:Name="bg" Background="Transparent" CornerRadius="4" Margin="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#EDE9FE"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#7C3AED"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsToday" Value="True">
+                                <Setter Property="FontWeight" Value="Bold"/>
+                                <Setter Property="Foreground" Value="#7C3AED"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#C9C3DA"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Application.Resources>
 </Application>

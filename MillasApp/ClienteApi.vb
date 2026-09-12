@@ -136,6 +136,38 @@ Public Class Aeropuerto
     End Property
 End Class
 
+Public Class RespuestaChat
+    Public Property ok As Boolean
+    Public Property accion As String
+    Public Property respuesta As String
+    Public Property estado As EstadoChat
+    Public Property mejor As Mejor
+    Public Property eleccion_por_ia As Boolean
+    Public Property opciones_evaluadas As Integer?
+    Public Property motivo As String
+End Class
+
+' Lo que el chat sabe de la busqueda hasta ahora. Se guarda entre mensajes y se
+' reenvia en cada uno, porque el backend no guarda sesion (memoria multi-turno).
+Public Class EstadoChat
+    Public Property origen As String
+    Public Property destino As String
+    Public Property fecha As String
+    Public Property fecha_vuelta As String
+    Public Property adultos As Integer?
+End Class
+
+' Un mensaje del chat, para las burbujas de la conversacion.
+Public Class MensajeChat
+    Public Property Texto As String
+    Public Property EsUsuario As Boolean
+
+    Public Sub New(texto As String, esUsuario As Boolean)
+        Me.Texto = texto
+        Me.EsUsuario = esUsuario
+    End Sub
+End Class
+
 Public Class ClienteApi
     ' HttpClient se instancia UNA sola vez y se reutiliza: crear uno por request
     ' agota los sockets del sistema.
@@ -168,5 +200,16 @@ Public Class ClienteApi
         Dim texto As String = Await http.GetStringAsync(BaseUrl & "/aeropuertos")
         Dim r As RespuestaAeropuertos = JsonSerializer.Deserialize(Of RespuestaAeropuertos)(texto, opciones)
         Return If(r?.aeropuertos, New List(Of Aeropuerto)())
+    End Function
+
+    Public Shared Async Function ChatAsync(mensaje As String, estado As EstadoChat) As Task(Of RespuestaChat)
+        Dim payload As New Dictionary(Of String, Object) From {{"mensaje", mensaje}}
+        If estado IsNot Nothing Then payload("estado") = estado
+        Dim json As String = JsonSerializer.Serialize(payload)
+        Using cuerpo As New StringContent(json, Encoding.UTF8, "application/json")
+            Dim resp As HttpResponseMessage = Await http.PostAsync(BaseUrl & "/chat", cuerpo)
+            Dim texto As String = Await resp.Content.ReadAsStringAsync()
+            Return JsonSerializer.Deserialize(Of RespuestaChat)(texto, opciones)
+        End Using
     End Function
 End Class

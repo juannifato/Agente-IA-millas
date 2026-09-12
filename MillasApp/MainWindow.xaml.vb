@@ -1,3 +1,4 @@
+Imports System.Collections.ObjectModel
 Imports System.Linq
 Imports System.Threading.Tasks
 Imports System.Windows.Controls.Primitives
@@ -10,6 +11,10 @@ Class MainWindow
     ' Lista completa de aeropuertos; se filtra sobre esta para el autocompletado.
     Private todosAeropuertos As New List(Of Aeropuerto)
 
+    ' --- Chat ---
+    Private ReadOnly mensajesChat As New ObservableCollection(Of MensajeChat)
+    Private estadoChat As EstadoChat   ' lo que el agente sabe hasta ahora (memoria)
+
     Public Sub New()
         InitializeComponent()
         ' Combo de adultos: 1 a 9 (lo que acepta la API).
@@ -17,6 +22,65 @@ Class MainWindow
             cboAdultos.Items.Add(i)
         Next
         cboAdultos.SelectedIndex = 0
+
+        listaMensajes.ItemsSource = mensajesChat
+        mensajesChat.Add(New MensajeChat(
+            "¡Hola! Contame a dónde querés viajar y lo busco por vos. " &
+            "Por ejemplo: ""quiero ir de Buenos Aires a Bariloche en diciembre"".", False))
+    End Sub
+
+    Private Sub btnEnviarChat_Click(sender As Object, e As RoutedEventArgs)
+        EnviarChat()
+    End Sub
+
+    Private Sub txtChat_KeyDown(sender As Object, e As KeyEventArgs)
+        ' Enter manda; Shift+Enter hace un salto de linea.
+        If e.Key = Key.Enter AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then
+            e.Handled = True
+            EnviarChat()
+        End If
+    End Sub
+
+    Private Async Sub EnviarChat()
+        Dim texto As String = txtChat.Text.Trim()
+        If texto = "" Then Return
+        txtChat.Clear()
+
+        mensajesChat.Add(New MensajeChat(texto, True))
+        Dim pensando As New MensajeChat("Pensando…", False)
+        mensajesChat.Add(pensando)
+        scrollChat.ScrollToEnd()
+        btnEnviarChat.IsEnabled = False
+
+        Try
+            Dim r As RespuestaChat = Await ClienteApi.ChatAsync(texto, estadoChat)
+            mensajesChat.Remove(pensando)
+            If r Is Nothing Then
+                mensajesChat.Add(New MensajeChat("No entendí la respuesta del servidor.", False))
+            Else
+                mensajesChat.Add(New MensajeChat(If(String.IsNullOrWhiteSpace(r.respuesta), "…", r.respuesta), False))
+                estadoChat = r.estado   ' se recuerda para el proximo mensaje
+                If r.mejor IsNot Nothing Then MostrarRecomendacionChat(r)
+            End If
+        Catch ex As Exception
+            mensajesChat.Remove(pensando)
+            mensajesChat.Add(New MensajeChat("No me pude conectar con el backend: " & ex.Message, False))
+        Finally
+            btnEnviarChat.IsEnabled = True
+            scrollChat.ScrollToEnd()
+            txtChat.Focus()
+        End Try
+    End Sub
+
+    ' Cuando el chat trae una recomendacion, se muestra en la misma grilla que el
+    ' formulario (el analisis ya lo dijo el agente en su burbuja).
+    Private Sub MostrarRecomendacionChat(r As RespuestaChat)
+        txtResumen.Text = $"{r.mejor.millas:N0} millas  +  $ {r.mejor.impuestos:N0} en impuestos"
+        txtAnalisis.Text = ""
+        txtNota.Visibility = Visibility.Collapsed
+        panelResumen.Visibility = Visibility.Visible
+        grdTramos.ItemsSource = r.mejor.tramos
+        txtEstado.Text = ""
     End Sub
 
     ' Al abrirse la ventana se piden aerolineas y aeropuertos al backend.

@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:MillasApp"
-        Title="Agente Millas IA" Height="680" Width="900"
-        WindowStartupLocation="CenterScreen"
+        Title="Agente Millas IA" Height="720" Width="1340"
+        WindowStartupLocation="CenterScreen" MinWidth="1100" MinHeight="600"
         FontFamily="Segoe UI" FontSize="13" Background="#F5F3FF"
         Loaded="Window_Loaded">
 
@@ -17,7 +17,6 @@
         <SolidColorBrush x:Key="TextoSuave" Color="#6B5B95"/>
         <SolidColorBrush x:Key="Tarjeta" Color="#FFFFFF"/>
 
-        <!-- Boton primario violeta con hover -->
         <Style x:Key="BotonPrimario" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource Primario}"/>
             <Setter Property="Foreground" Value="White"/>
@@ -42,170 +41,213 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
-        <!-- Dias del calendario: hover lila, seleccion violeta, hoy en violeta -->
-        <Style TargetType="CalendarDayButton">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="CalendarDayButton">
-                        <Border x:Name="bg" Background="Transparent" CornerRadius="4" Margin="1">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bg" Property="Background" Value="{StaticResource Lila}"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="bg" Property="Background" Value="{StaticResource Primario}"/>
-                                <Setter Property="Foreground" Value="White"/>
-                            </Trigger>
-                            <Trigger Property="IsToday" Value="True">
-                                <Setter Property="FontWeight" Value="Bold"/>
-                                <Setter Property="Foreground" Value="{StaticResource Primario}"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Foreground" Value="#C9C3DA"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
 
     <Grid Margin="18">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="380"/>
+        </Grid.ColumnDefinitions>
 
-        <!-- Titulo -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,14">
-            <TextBlock Text="Agente Millas IA" FontSize="24" FontWeight="SemiBold"
-                       Foreground="{StaticResource Texto}"/>
-            <TextBlock Text="Buscá el pasaje en millas más conveniente"
-                       Foreground="{StaticResource TextoSuave}"/>
-        </StackPanel>
+        <!-- ================= IZQUIERDA: buscador por formulario ================= -->
+        <Grid Grid.Column="0" Margin="0,0,14,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <!-- Formulario -->
-        <Border Grid.Row="1" Background="{StaticResource Tarjeta}" CornerRadius="10" Padding="16"
-                BorderBrush="{StaticResource Borde}" BorderThickness="1">
-            <StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <StackPanel Margin="0,0,14,0">
-                        <TextBlock Text="Origen" Margin="0,0,0,3" Foreground="{StaticResource Texto}"/>
-                        <ComboBox x:Name="cboOrigen" Width="220" Padding="6,4"
-                                  IsEditable="True" IsTextSearchEnabled="False"
-                                  StaysOpenOnEdit="True" MaxDropDownHeight="240"
-                                  DisplayMemberPath="Display" KeyUp="Aeropuerto_KeyUp"/>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,14,0">
-                        <TextBlock Text="Destino" Margin="0,0,0,3" Foreground="{StaticResource Texto}"/>
-                        <ComboBox x:Name="cboDestino" Width="220" Padding="6,4"
-                                  IsEditable="True" IsTextSearchEnabled="False"
-                                  StaysOpenOnEdit="True" MaxDropDownHeight="240"
-                                  DisplayMemberPath="Display" KeyUp="Aeropuerto_KeyUp"/>
-                    </StackPanel>
-                    <StackPanel>
-                        <TextBlock Text="Adultos" Margin="0,0,0,3" Foreground="{StaticResource Texto}"/>
-                        <ComboBox x:Name="cboAdultos" Width="55" Padding="6,4"/>
-                    </StackPanel>
-                </StackPanel>
-
-                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                    <StackPanel Margin="0,0,14,0">
-                        <TextBlock Text="Fechas (ida y vuelta)" Margin="0,0,0,3" Foreground="{StaticResource Texto}"/>
-                        <Button x:Name="btnFechas" Width="260" Padding="8,5"
-                                HorizontalContentAlignment="Left" Background="White"
-                                BorderBrush="{StaticResource Primario}" BorderThickness="1" Cursor="Hand"
-                                Foreground="{StaticResource Texto}"
-                                Content="Elegí las fechas" Click="btnFechas_Click"/>
-                        <Popup x:Name="popupFechas" PlacementTarget="{Binding ElementName=btnFechas}"
-                               Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
-                            <Border Background="White" BorderBrush="{StaticResource Borde}" BorderThickness="1"
-                                    CornerRadius="10" Padding="12" Margin="0,4,0,0">
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                        <RadioButton x:Name="rbIdaVuelta" Content="Ida y vuelta" IsChecked="True"
-                                                     Margin="0,0,14,0" Checked="Modo_Cambiado"
-                                                     Foreground="{StaticResource Texto}"/>
-                                        <RadioButton x:Name="rbSoloIda" Content="Solo ida" Checked="Modo_Cambiado"
-                                                     Foreground="{StaticResource Texto}"/>
-                                    </StackPanel>
-                                    <TextBlock x:Name="txtAyudaFechas" Width="250" TextWrapping="Wrap"
-                                               Foreground="{StaticResource TextoSuave}" Margin="0,0,0,6"
-                                               Text="Tocá la ida y después la vuelta (entre medio se va marcando el rango)."/>
-                                    <Calendar x:Name="calFechas" SelectionMode="SingleRange"
-                                              PreviewMouseUp="calFechas_PreviewMouseUp"
-                                              PreviewMouseMove="calFechas_PreviewMouseMove"
-                                              MouseLeave="calFechas_MouseLeave"/>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
-                                        <Button Content="Limpiar" Padding="10,4" Margin="0,0,6,0"
-                                                Cursor="Hand" Click="btnLimpiarFechas_Click"/>
-                                        <Button Content="Listo" Padding="16,4" Style="{StaticResource BotonPrimario}"
-                                                Click="btnListoFechas_Click"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,14,0">
-                        <TextBlock Text="Aerolínea" Margin="0,0,0,3" Foreground="{StaticResource Texto}"/>
-                        <ComboBox x:Name="cboAerolinea" Width="250" Padding="6,4"
-                                  DisplayMemberPath="nombre"/>
-                    </StackPanel>
-                    <Button x:Name="btnBuscar" Content="Buscar mejor vuelo" Padding="18,8"
-                            VerticalAlignment="Bottom" Style="{StaticResource BotonPrimario}"
-                            Click="btnBuscar_Click"/>
-                </StackPanel>
-
-                <TextBlock Text="Escribí la ciudad o el código (ej. Bariloche o BRC) y elegí de la lista."
-                           Foreground="{StaticResource TextoSuave}" Margin="0,10,0,0"/>
+            <StackPanel Grid.Row="0" Margin="0,0,0,14">
+                <TextBlock Text="Agente Millas IA" FontSize="24" FontWeight="SemiBold"
+                           Foreground="{StaticResource Texto}"/>
+                <TextBlock Text="Buscá el pasaje en millas más conveniente"
+                           Foreground="{StaticResource TextoSuave}"/>
             </StackPanel>
-        </Border>
 
-        <!-- Estado / error -->
-        <TextBlock x:Name="txtEstado" Grid.Row="2" Margin="2,12,0,4"
-                   TextWrapping="Wrap" Foreground="#C0392B"/>
+            <Border Grid.Row="1" Background="{StaticResource Tarjeta}" CornerRadius="10" Padding="16"
+                    BorderBrush="{StaticResource Borde}" BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <StackPanel Margin="0,0,14,0">
+                            <TextBlock Text="Origen" Margin="0,0,0,3" Foreground="{StaticResource Texto}"/>
+                            <ComboBox x:Name="cboOrigen" Width="210" Padding="6,4"
+                                      IsEditable="True" IsTextSearchEnabled="False"
+                                      StaysOpenOnEdit="True" MaxDropDownHeight="240"
+                                      DisplayMemberPath="Display" KeyUp="Aeropuerto_KeyUp"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,14,0">
+                            <TextBlock Text="Destino" Margin="0,0,0,3" Foreground="{StaticResource Texto}"/>
+                            <ComboBox x:Name="cboDestino" Width="210" Padding="6,4"
+                                      IsEditable="True" IsTextSearchEnabled="False"
+                                      StaysOpenOnEdit="True" MaxDropDownHeight="240"
+                                      DisplayMemberPath="Display" KeyUp="Aeropuerto_KeyUp"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Adultos" Margin="0,0,0,3" Foreground="{StaticResource Texto}"/>
+                            <ComboBox x:Name="cboAdultos" Width="55" Padding="6,4"/>
+                        </StackPanel>
+                    </StackPanel>
 
-        <!-- Resultado -->
-        <Border Grid.Row="3" Background="{StaticResource Tarjeta}" CornerRadius="10" Padding="16"
-                BorderBrush="{StaticResource Borde}" BorderThickness="1" Margin="0,8,0,0">
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <StackPanel Margin="0,0,14,0">
+                            <TextBlock Text="Fechas (ida y vuelta)" Margin="0,0,0,3" Foreground="{StaticResource Texto}"/>
+                            <Button x:Name="btnFechas" Width="250" Padding="8,5"
+                                    HorizontalContentAlignment="Left" Background="White"
+                                    BorderBrush="{StaticResource Primario}" BorderThickness="1" Cursor="Hand"
+                                    Foreground="{StaticResource Texto}"
+                                    Content="Elegí las fechas" Click="btnFechas_Click"/>
+                            <Popup x:Name="popupFechas" PlacementTarget="{Binding ElementName=btnFechas}"
+                                   Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                                <Border Background="White" BorderBrush="{StaticResource Borde}" BorderThickness="1"
+                                        CornerRadius="10" Padding="12" Margin="0,4,0,0">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <RadioButton x:Name="rbIdaVuelta" Content="Ida y vuelta" IsChecked="True"
+                                                         Margin="0,0,14,0" Checked="Modo_Cambiado"
+                                                         Foreground="{StaticResource Texto}"/>
+                                            <RadioButton x:Name="rbSoloIda" Content="Solo ida" Checked="Modo_Cambiado"
+                                                         Foreground="{StaticResource Texto}"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="txtAyudaFechas" Width="250" TextWrapping="Wrap"
+                                                   Foreground="{StaticResource TextoSuave}" Margin="0,0,0,6"
+                                                   Text="Tocá la ida y después la vuelta (entre medio se va marcando el rango)."/>
+                                        <Calendar x:Name="calFechas" SelectionMode="SingleRange"
+                                                  PreviewMouseUp="calFechas_PreviewMouseUp"
+                                                  PreviewMouseMove="calFechas_PreviewMouseMove"
+                                                  MouseLeave="calFechas_MouseLeave"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+                                            <Button Content="Limpiar" Padding="10,4" Margin="0,0,6,0"
+                                                    Cursor="Hand" Click="btnLimpiarFechas_Click"/>
+                                            <Button Content="Listo" Padding="16,4" Style="{StaticResource BotonPrimario}"
+                                                    Click="btnListoFechas_Click"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,14,0">
+                            <TextBlock Text="Aerolínea" Margin="0,0,0,3" Foreground="{StaticResource Texto}"/>
+                            <ComboBox x:Name="cboAerolinea" Width="230" Padding="6,4"
+                                      DisplayMemberPath="nombre"/>
+                        </StackPanel>
+                        <Button x:Name="btnBuscar" Content="Buscar mejor vuelo" Padding="18,8"
+                                VerticalAlignment="Bottom" Style="{StaticResource BotonPrimario}"
+                                Click="btnBuscar_Click"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Escribí la ciudad o el código (ej. Bariloche o BRC) y elegí de la lista."
+                               Foreground="{StaticResource TextoSuave}" Margin="0,10,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <TextBlock x:Name="txtEstado" Grid.Row="2" Margin="2,12,0,4"
+                       TextWrapping="Wrap" Foreground="#C0392B"/>
+
+            <Border Grid.Row="3" Background="{StaticResource Tarjeta}" CornerRadius="10" Padding="16"
+                    BorderBrush="{StaticResource Borde}" BorderThickness="1" Margin="0,8,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" x:Name="panelResumen" Visibility="Collapsed">
+                        <TextBlock x:Name="txtResumen" FontSize="18" FontWeight="SemiBold"
+                                   Foreground="{StaticResource Texto}"/>
+                        <TextBlock x:Name="txtAnalisis" TextWrapping="Wrap" FontStyle="Italic"
+                                   Foreground="{StaticResource TextoSuave}" Margin="0,4,0,0"/>
+                        <TextBlock x:Name="txtNota" Foreground="#C0392B" Margin="0,4,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+                    <DataGrid x:Name="grdTramos" Grid.Row="1" Margin="0,12,0,0"
+                              AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal" BorderThickness="0"
+                              Background="White" RowBackground="White" AlternatingRowBackground="#F5F3FF"
+                              CanUserAddRows="False" CanUserResizeRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Tramo" Binding="{Binding tramo}" Width="70"/>
+                            <DataGridTextColumn Header="Vuelo" Binding="{Binding VuelosTexto}" Width="120"/>
+                            <DataGridTextColumn Header="Ruta" Binding="{Binding RutaTexto}" Width="110"/>
+                            <DataGridTextColumn Header="Sale" Binding="{Binding SaleTexto}" Width="90"/>
+                            <DataGridTextColumn Header="Llega" Binding="{Binding LlegaTexto}" Width="90"/>
+                            <DataGridTextColumn Header="Escalas" Binding="{Binding EscalasTexto}" Width="80"/>
+                            <DataGridTextColumn Header="Duración" Binding="{Binding DuracionTexto}" Width="80"/>
+                            <DataGridTextColumn Header="Tarifa" Binding="{Binding tarifa}" Width="140"/>
+                            <DataGridTextColumn Header="Millas" Binding="{Binding MillasTexto}" Width="70"/>
+                            <DataGridTextColumn Header="Impuestos" Binding="{Binding ImpuestosTexto}" Width="90"/>
+                            <DataGridTextColumn Header="Asientos" Binding="{Binding asientos}" Width="70"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ================= DERECHA: chat con la IA ================= -->
+        <Border Grid.Column="1" Background="{StaticResource Tarjeta}" CornerRadius="12"
+                BorderBrush="{StaticResource Borde}" BorderThickness="1">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" x:Name="panelResumen" Visibility="Collapsed">
-                    <TextBlock x:Name="txtResumen" FontSize="18" FontWeight="SemiBold"
-                               Foreground="{StaticResource Texto}"/>
-                    <TextBlock x:Name="txtAnalisis" TextWrapping="Wrap" FontStyle="Italic"
-                               Foreground="{StaticResource TextoSuave}" Margin="0,4,0,0"/>
-                    <TextBlock x:Name="txtNota" Foreground="#C0392B" Margin="0,4,0,0" Visibility="Collapsed"/>
-                </StackPanel>
+                <!-- Header del chat -->
+                <Border Grid.Row="0" CornerRadius="12,12,0,0" Padding="14,12">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#7C3AED" Offset="0"/>
+                            <GradientStop Color="#9333EA" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <StackPanel>
+                        <TextBlock Text="✨ Asistente IA" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
+                        <TextBlock Text="Decime a dónde querés viajar y lo busco por vos"
+                                   Foreground="#E9D5FF" FontSize="12" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
 
-                <DataGrid x:Name="grdTramos" Grid.Row="1" Margin="0,12,0,0"
-                          AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
-                          GridLinesVisibility="Horizontal" BorderThickness="0"
-                          Background="White" RowBackground="White" AlternatingRowBackground="#F5F3FF"
-                          CanUserAddRows="False" CanUserResizeRows="False">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Tramo" Binding="{Binding tramo}" Width="70"/>
-                        <DataGridTextColumn Header="Vuelo" Binding="{Binding VuelosTexto}" Width="120"/>
-                        <DataGridTextColumn Header="Ruta" Binding="{Binding RutaTexto}" Width="110"/>
-                        <DataGridTextColumn Header="Sale" Binding="{Binding SaleTexto}" Width="90"/>
-                        <DataGridTextColumn Header="Llega" Binding="{Binding LlegaTexto}" Width="90"/>
-                        <DataGridTextColumn Header="Escalas" Binding="{Binding EscalasTexto}" Width="80"/>
-                        <DataGridTextColumn Header="Duración" Binding="{Binding DuracionTexto}" Width="80"/>
-                        <DataGridTextColumn Header="Tarifa" Binding="{Binding tarifa}" Width="140"/>
-                        <DataGridTextColumn Header="Millas" Binding="{Binding MillasTexto}" Width="70"/>
-                        <DataGridTextColumn Header="Impuestos" Binding="{Binding ImpuestosTexto}" Width="90"/>
-                        <DataGridTextColumn Header="Asientos" Binding="{Binding asientos}" Width="70"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+                <!-- Mensajes -->
+                <ScrollViewer Grid.Row="1" x:Name="scrollChat" VerticalScrollBarVisibility="Auto"
+                              Padding="12,10">
+                    <ItemsControl x:Name="listaMensajes">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="burbuja" CornerRadius="12" Padding="10,8" Margin="0,4"
+                                        MaxWidth="300" HorizontalAlignment="Left" Background="#F0EDF9">
+                                    <TextBlock x:Name="txt" Text="{Binding Texto}" TextWrapping="Wrap"
+                                               Foreground="#2E1065"/>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding EsUsuario}" Value="True">
+                                        <Setter TargetName="burbuja" Property="HorizontalAlignment" Value="Right"/>
+                                        <Setter TargetName="burbuja" Property="Background" Value="#7C3AED"/>
+                                        <Setter TargetName="txt" Property="Foreground" Value="White"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Input -->
+                <Border Grid.Row="2" Background="#FAF9FE" CornerRadius="0,0,12,12" Padding="10"
+                        BorderBrush="{StaticResource Borde}" BorderThickness="0,1,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="White" CornerRadius="8"
+                                BorderBrush="{StaticResource Borde}" BorderThickness="1" Padding="8,4">
+                            <TextBox x:Name="txtChat" BorderThickness="0" Background="Transparent"
+                                     VerticalContentAlignment="Center" TextWrapping="Wrap"
+                                     MaxHeight="70" VerticalScrollBarVisibility="Auto"
+                                     KeyDown="txtChat_KeyDown"/>
+                        </Border>
+                        <Button Grid.Column="1" x:Name="btnEnviarChat" Content="Enviar" Margin="8,0,0,0"
+                                Padding="14,8" Style="{StaticResource BotonPrimario}" Click="btnEnviarChat_Click"/>
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
     </Grid>
