@@ -378,3 +378,26 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se implementó la capacidad de que el chat reconozca y normalice expresiones de franja horaria (como “a la mañana”, “de madrugada” o “al mediodía”) y filtre los vuelos ya obtenidos para mostrar solo aquellos que salen dentro del rango solicitado, manteniendo el resto del contexto (origen, destino y fechas). Además, se añadió un caché temporal en busqueda.py que conserva el último resultado bruto de cada búsqueda, evitando consultas repetidas a la aerolínea cuando se refinan criterios como el horario. Se incluyeron pruebas unitarias para validar el filtrado por franja y se aisló el caché entre casos de prueba.
 
+----------------------------------------------------------------
+[12/09/2026 19:10] commit 25c8f02 - juannifato
+Mensaje: Permitir actualizar el token de Aerolineas desde la app, sin reiniciar
+
+Como el token no se pudo automatizar y hay que renovarlo cada 24 h, se hace que
+renovarlo sea trivial: la app tiene un boton "Token" que abre una ventanita
+donde se pega el token nuevo (copiado del navegador) y se guarda al toque. Antes
+habia que editar el .env a mano y reiniciar el backend.
+
+Del lado del backend, el token pasa a leerse en caliente: token_estado.py
+mantiene el token vigente y lo guarda en un archivo .token aparte (no en el .env,
+para no arriesgar las otras claves), con el AEROLINEAS_TOKEN del .env como valor
+inicial. El scraper lo lee en cada busqueda, no al arrancar. Se agregan
+GET /token/estado (dice si esta vigente o vencido y cuando vence) y POST /token
+(valida que sea un JWT y no este vencido, y lo guarda). La ventanita de la app
+muestra el estado y avisa el resultado.
+
+Esto deja el token como el unico mantenimiento del operador, y de 30 segundos.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se implementó una gestión dinámica del token de Aerolíneas, permitiendo que la aplicación lo actualice desde una ventana emergente sin necesidad de reiniciar el backend. El backend ahora lee el token en caliente desde un archivo .token, expone los endpoints GET /token/estado y POST /token para consultar su vigencia y registrar un nuevo JWT válido, y el scraper lo utiliza en cada búsqueda. Con esto el operador solo necesita pegar el nuevo token cada 24 horas, simplificando el mantenimiento y evitando editar manualmente el .env.
+
