@@ -168,6 +168,18 @@ Public Class MensajeChat
     End Sub
 End Class
 
+' Estado del token de Aerolineas y respuesta al actualizarlo (comparten campos).
+Public Class EstadoToken
+    Public Property ok As Boolean
+    Public Property hay_token As Boolean
+    Public Property valido As Boolean
+    Public Property vence As String
+    Public Property vencido As Boolean
+    Public Property minutos As Integer?
+    Public Property motivo As String
+    Public Property [error] As String
+End Class
+
 Public Class ClienteApi
     ' HttpClient se instancia UNA sola vez y se reutiliza: crear uno por request
     ' agota los sockets del sistema.
@@ -210,6 +222,21 @@ Public Class ClienteApi
             Dim resp As HttpResponseMessage = Await http.PostAsync(BaseUrl & "/chat", cuerpo)
             Dim texto As String = Await resp.Content.ReadAsStringAsync()
             Return JsonSerializer.Deserialize(Of RespuestaChat)(texto, opciones)
+        End Using
+    End Function
+
+    Public Shared Async Function EstadoTokenAsync() As Task(Of EstadoToken)
+        Dim texto As String = Await http.GetStringAsync(BaseUrl & "/token/estado")
+        Return JsonSerializer.Deserialize(Of EstadoToken)(texto, opciones)
+    End Function
+
+    Public Shared Async Function GuardarTokenAsync(token As String) As Task(Of EstadoToken)
+        Dim payload As New Dictionary(Of String, Object) From {{"token", token}}
+        Dim json As String = JsonSerializer.Serialize(payload)
+        Using cuerpo As New StringContent(json, Encoding.UTF8, "application/json")
+            Dim resp As HttpResponseMessage = Await http.PostAsync(BaseUrl & "/token", cuerpo)
+            Dim texto As String = Await resp.Content.ReadAsStringAsync()
+            Return JsonSerializer.Deserialize(Of EstadoToken)(texto, opciones)
         End Using
     End Function
 End Class

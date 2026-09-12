@@ -29,6 +29,11 @@ Class MainWindow
             "Por ejemplo: ""quiero ir de Buenos Aires a Bariloche en diciembre"".", False))
     End Sub
 
+    Private Sub btnToken_Click(sender As Object, e As RoutedEventArgs)
+        Dim v As New VentanaToken() With {.Owner = Me}
+        v.ShowDialog()
+    End Sub
+
     Private Sub btnEnviarChat_Click(sender As Object, e As RoutedEventArgs)
         EnviarChat()
     End Sub

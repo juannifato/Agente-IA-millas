@@ -17,6 +17,7 @@ from flask import Flask, jsonify, request
 import aeropuertos
 import busqueda
 import scrapers
+import token_estado
 from config import DEBUG, PORT
 from ia import ErrorRecorte, conversacion
 from ia.analisis_ia import ErrorIA
@@ -103,6 +104,35 @@ def listar_aeropuertos():
     # La app de escritorio lo pide al arrancar para el autocompletado de origen
     # y destino (escribir "bariloche" y que sugiera BRC).
     return jsonify({"ok": True, "aeropuertos": aeropuertos.catalogo()})
+
+
+@app.get("/token/estado")
+def estado_token():
+    # La app lo consulta para mostrar si el token esta vigente o vencido.
+    datos = token_estado.info(token_estado.token_vigente())
+    return jsonify({"ok": True, "hay_token": bool(token_estado.token_vigente()), **datos})
+
+
+@app.post("/token")
+def cambiar_token():
+    # La app manda el token nuevo (que Juan copia del navegador) y se actualiza
+    # en caliente, sin reiniciar ni editar archivos.
+    cuerpo = request.get_json(silent=True)
+    if not isinstance(cuerpo, dict) or not isinstance(cuerpo.get("token"), str):
+        return jsonify({"ok": False, "motivo": "cuerpo_invalido",
+                        "error": "Se esperaba un JSON con 'token'."}), 400
+
+    token = cuerpo["token"].strip()
+    datos = token_estado.info(token)
+    if not datos["valido"]:
+        return jsonify({"ok": False, "motivo": "token_invalido",
+                        "error": "Eso no parece un token valido (tiene que ser un JWT)."}), 400
+    if datos["vencido"]:
+        return jsonify({"ok": False, "motivo": "token_vencido",
+                        "error": "Ese token ya esta vencido. Copiá uno nuevo del navegador."}), 400
+
+    token_estado.actualizar_token(token)
+    return jsonify({"ok": True, "vence": datos["vence"], "minutos": datos["minutos"]})
 
 
 @app.post("/buscar")

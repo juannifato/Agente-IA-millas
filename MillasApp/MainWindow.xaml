@@ -58,12 +58,22 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Margin="0,0,0,14">
-                <TextBlock Text="Agente Millas IA" FontSize="24" FontWeight="SemiBold"
-                           Foreground="{StaticResource Texto}"/>
-                <TextBlock Text="Buscá el pasaje en millas más conveniente"
-                           Foreground="{StaticResource TextoSuave}"/>
-            </StackPanel>
+            <Grid Grid.Row="0" Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Agente Millas IA" FontSize="24" FontWeight="SemiBold"
+                               Foreground="{StaticResource Texto}"/>
+                    <TextBlock Text="Buscá el pasaje en millas más conveniente"
+                               Foreground="{StaticResource TextoSuave}"/>
+                </StackPanel>
+                <Button Grid.Column="1" x:Name="btnToken" Content="🔑 Token" VerticalAlignment="Center"
+                        Padding="12,7" Cursor="Hand" Background="White"
+                        BorderBrush="{StaticResource Primario}" BorderThickness="1"
+                        Foreground="{StaticResource Primario}" Click="btnToken_Click"/>
+            </Grid>
 
             <Border Grid.Row="1" Background="{StaticResource Tarjeta}" CornerRadius="10" Padding="16"
                     BorderBrush="{StaticResource Borde}" BorderThickness="1">

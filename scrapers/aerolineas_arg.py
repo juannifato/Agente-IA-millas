@@ -9,7 +9,8 @@ La API exige un token Bearer. Se lee de AEROLINEAS_TOKEN en el .env.
 """
 import requests
 
-from config import AEROLINEAS_TOKEN, TIMEOUT, USER_AGENT
+import token_estado
+from config import TIMEOUT, USER_AGENT
 from scrapers.base import ErrorScraper, Scraper
 
 
@@ -28,8 +29,6 @@ class AerolineasArgentinas(Scraper):
             "Accept": "application/json",
             "Accept-Language": "es-AR,es;q=0.9",
         })
-        if AEROLINEAS_TOKEN:
-            self.sesion.headers["Authorization"] = f"Bearer {AEROLINEAS_TOKEN}"
 
     @staticmethod
     def _tramo(origen: str, destino: str, fecha_iso: str) -> str:
@@ -44,12 +43,16 @@ class AerolineasArgentinas(Scraper):
         fecha_vuelta_iso: str | None = None,
         adultos: int = 1,
     ) -> dict:
-        if not AEROLINEAS_TOKEN:
+        # El token se lee en cada busqueda (no al crear el scraper) porque se
+        # puede haber actualizado en caliente desde la app.
+        token = token_estado.token_vigente()
+        if not token:
             raise ErrorScraper(
-                "Falta el token de Aerolineas Argentinas. Cargalo como "
-                "AEROLINEAS_TOKEN en el archivo .env.",
+                "Falta el token de Aerolineas Argentinas. Cargalo desde la app "
+                "o como AEROLINEAS_TOKEN en el .env.",
                 motivo="falta_token",
             )
+        self.sesion.headers["Authorization"] = f"Bearer {token}"
 
         # La ida y la vuelta se mandan repitiendo el parametro 'leg'.
         tramos = [self._tramo(origen, destino, fecha_iso)]
