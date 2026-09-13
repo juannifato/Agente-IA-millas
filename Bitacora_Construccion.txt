@@ -401,3 +401,24 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
 
 Se implementó una gestión dinámica del token de Aerolíneas, permitiendo que la aplicación lo actualice desde una ventana emergente sin necesidad de reiniciar el backend. El backend ahora lee el token en caliente desde un archivo .token, expone los endpoints GET /token/estado y POST /token para consultar su vigencia y registrar un nuevo JWT válido, y el scraper lo utiliza en cada búsqueda. Con esto el operador solo necesita pegar el nuevo token cada 24 horas, simplificando el mantenimiento y evitando editar manualmente el .env.
 
+----------------------------------------------------------------
+[12/09/2026 23:17] commit 23cf076 - juannifato
+Mensaje: Preparar el deploy en Render (Fase 6) y actualizar la documentacion
+
+Se deja todo listo para desplegar el backend en Render: un render.yaml como
+blueprint (build con pip, arranque con gunicorn y un solo worker para que el
+token y el cache en memoria queden consistentes, y las claves con sync:false para
+cargarlas a mano) y un .python-version fijado en 3.12, porque Render no tiene la
+3.14 de la maquina local y el codigo se mantuvo compatible con 3.11+. La guia
+paso a paso queda en docs/fase6_render.md, incluido como apuntar la app a la URL
+de Render y las limitaciones del plan gratis (se duerme, el token en caliente es
+efimero). Solo falta que Juan lo ejecute.
+
+Se actualiza el CLAUDE.md y el README con el estado real tras esta sesion: el
+chat con IA, el token editable desde la app, el refinamiento por horario, el
+mapa del repo con los modulos nuevos y los endpoints agregados.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+Se añadió la configuración necesaria para desplegar el backend de Agente Millas IA en Render, incluyendo un archivo render.yaml que define la construcción con pip, el arranque con gunicorn y un único worker para mantener consistentes el token y el caché en memoria, y se fijó la versión de Python a 3.12. Además, se creó la guía docs/fase6_render.md con los pasos de despliegue y limitaciones del plan gratuito, y se actualizaron CLAUDE.md y README.md para reflejar el estado actual del proyecto, como el token editable, el refinamiento por horario y los nuevos módulos y endpoints.
+
