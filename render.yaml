@@ -1,0 +1,24 @@
+# Blueprint de Render para desplegar el backend (Fase 6). Guia: docs/fase6_render.md
+#
+# Render lee este archivo al conectar el repo y arma el servicio solo. Las claves
+# van con `sync: false`: no se escriben aca (no se commitean), se cargan a mano en
+# el panel de Render.
+services:
+  - type: web
+    name: agente-millas-ia
+    runtime: python
+    plan: free
+    # gunicorn con UN worker a proposito: el token y el cache de busquedas viven
+    # en memoria del proceso, asi que con varios workers quedarian desincronizados.
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 1 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: DEBUG
+        value: "false"
+      # Secretos: se cargan en el panel de Render, no aca.
+      - key: GROQ_API_KEY
+        sync: false
+      - key: AEROLINEAS_TOKEN
+        sync: false

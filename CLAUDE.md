@@ -8,7 +8,7 @@ el resultado como JSON para una app de escritorio en Visual Basic.
 de tier gratuito y sin tarjeta de crédito. Ante dos opciones, va la gratuita.
 
 - Repo: https://github.com/juannifato/Agente-IA-millas
-- Arrancó el 2026-09-09. Última sesión: 2026-09-10.
+- Arrancó el 2026-09-09. Última sesión: 2026-09-12.
 
 ---
 
@@ -19,9 +19,9 @@ de tier gratuito y sin tarjeta de crédito. Ante dos opciones, va la gratuita.
 | 1 — Entorno, repo y auto-bitácora | ✅ probada |
 | 2 — Cuentas Groq + Render | ✅ Groq verificado. **Render sin verificar** (se prueba en la Fase 6) |
 | 3 — Motor de extracción | ✅ **búsqueda real funcionando** |
-| 4 — Cerebro analítico (IA) | ✅ **validada con datos reales** (recorte fiel + filtro de dominadas + IA eligiendo bien entre opciones reales) |
-| 5 — Interfaz Visual Basic | ⬅️ **acá vamos** |
-| 6 — Deploy en Render | pendiente |
+| 4 — Cerebro analítico (IA) | ✅ **validada con datos reales** (recorte + filtro de dominadas + franja horaria + IA eligiendo bien) |
+| 5 — Interfaz Visual Basic | ✅ app WPF: buscador + **chat con IA** + calendario + **token editable desde la app**. Compila. Falta la verificación visual final de Juan |
+| 6 — Deploy en Render | ⬅️ **preparada** (`render.yaml`, `.python-version`, guía en docs). Falta que Juan la ejecute |
 | 7 — Más aerolíneas | la estructura ya está lista |
 
 El plan original completo de las 7 fases está transcripto en
@@ -84,8 +84,11 @@ py                              # el launcher, para crear el venv
 .\.venv\Scripts\python.exe      # el intérprete del proyecto, para todo lo demás
 ```
 
-Disponible: Git, Node.js v24, Python 3.14, GitHub CLI (`gh`, sin autenticar).
-**No hay .NET SDK ni Visual Studio** — hay que resolverlo en la Fase 5.
+Disponible: Git, Node.js v24, Python 3.14, GitHub CLI (`gh`, sin autenticar), y
+**.NET SDK 10** (se instaló el 2026-09-12 con `winget install Microsoft.DotNet.SDK.10`,
+para la app WPF). No hay Visual Studio, pero con la CLI `dotnet` alcanza.
+Ojo en Git Bash: `dotnet` puede no estar en el PATH; usar
+`export PATH="$PATH:/c/Program Files/dotnet"`. En una PowerShell nueva ya está.
 
 ### Comandos
 
@@ -99,8 +102,11 @@ Disponible: Git, Node.js v24, Python 3.14, GitHub CLI (`gh`, sin autenticar).
 # Instalar dependencias
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 
-# Correr todos los tests de una (test_endpoint necesita GROQ_API_KEY; el resto no usa red)
+# Correr todos los tests de una (test_endpoint y test_chat necesitan GROQ_API_KEY)
 .\.venv\Scripts\python.exe tests\correr_todo.py
+
+# Levantar la app de escritorio (necesita el backend corriendo)
+cd MillasApp; dotnet run
 ```
 
 Flask corre sin recarga automática: **después de editar código hay que
@@ -111,29 +117,40 @@ reiniciar el servidor**, si no se prueba la versión vieja (ya pasó).
 ## Mapa del repositorio
 
 ```
-app.py                        Flask. GET /salud, GET /aerolineas, POST /buscar
+app.py                        Flask. /salud /aerolineas /aeropuertos /buscar /chat /token
 config.py                     Lee el .env una sola vez y expone las constantes
+busqueda.py                   Orquesta scraper→recorte→IA (lo usan /buscar y el chat). Cachea el crudo
+aeropuertos.py                Lista curada de aeropuertos (para el autocompletado)
+token_estado.py               Token vigente, actualizable en caliente (archivo .token)
 verificar_setup.py            Chequeo de entorno: .env + conexión real con Groq
-renovar_token.py              Renueva el token de Aerolíneas (necesita el client_secret)
 requirements.txt              Dependencias con versión fijada
+render.yaml / .python-version Config para el deploy en Render (Fase 6)
 ia/
-  recorte.py                  Achica el crudo de la aerolínea a lo comparable
+  recorte.py                  Achica el crudo + filtro de dominadas + filtro por franja horaria
   analisis_ia.py              Le pide a Groq que elija la mejor tarifa por tramo
+  conversacion.py             Cerebro del chat: entiende el pedido, guardrails, dispara la búsqueda
+  groq_cliente.py             Llamada común a Groq (la comparten analisis y conversacion)
   __init__.py                 Expone recortar() y ErrorRecorte
 scrapers/
   base.py                     Contrato común (clase Scraper) + ErrorScraper
   __init__.py                 Registro y ruteo dinámico por clave (Fase 7)
-  aerolineas_arg.py           Extractor de Aerolíneas Argentinas
-  token_aerolineas.py         Renovación automática del token (escrito, sin probar)
+  aerolineas_arg.py           Extractor de Aerolíneas Argentinas (usa token_estado)
+  token_aerolineas.py         Código muerto: renovación por client_secret que no se pudo conseguir
+MillasApp/                    App de escritorio WPF en VB.NET (Fase 5)
+  MainWindow.xaml(.vb)        Ventana: buscador (izq) + chat con IA (der)
+  VentanaToken.xaml(.vb)      Ventanita para pegar el token nuevo
+  ClienteApi.vb               Cliente HTTP + modelos que consumen el backend
 tests/
   correr_todo.py              Corre toda la suite y da un único resultado
-  test_recorte.py             El recorte (sin red)
+  test_recorte.py             Recorte + filtro dominadas + franja (sin red)
   test_analisis.py            Reconstrucción y red de seguridad (sin red)
-  test_contrato.py            Validaciones y contrato de la API (sin red, 15 casos)
+  test_contrato.py            Validaciones y contrato de la API, incl. token (sin red)
   test_endpoint.py            /buscar de punta a punta con Groq real
+  test_chat.py                El chat: guardrails, faltan datos, ambigüedad (Groq real)
   datos_muestra.py            Crudos de ejemplo con la forma real de Aerolíneas
 docs/plan_original.md          El plan de las 7 fases, con sus desvíos
-docs/fase5_visual_basic.md     Guía de integración para la app de Visual Basic
+docs/fase5_visual_basic.md     Guía de integración de la app de escritorio
+docs/fase6_render.md           Guía de deploy en Render
 .github/workflows/autodoc.yml La auto-bitácora
 Bitacora_Construccion.txt     Se escribe sola, no editar a mano
 ```
@@ -161,6 +178,16 @@ texto, para que el frontend reaccione sin leer strings.
 
 Los códigos HTTP dicen **de quién es el problema**: `400` datos mal enviados,
 `503` falta configuración del backend, `502` falló la aerolínea.
+
+Otros endpoints:
+
+- `GET /aeropuertos` — lista para el autocompletado de la app (iata, ciudad, país, nombre).
+- `POST /chat` — el agente conversacional. Recibe `{mensaje, estado}` (el cliente
+  reenvía el `estado` en cada mensaje: memoria multi-turno sin sesión en el server).
+  Devuelve `{accion, respuesta, estado, mejor, ...}`. Entiende horario ("a la mañana")
+  y refina filtrando por franja. Tiene guardrails: solo responde sobre vuelos.
+- `GET /token/estado` y `POST /token` — la app consulta y actualiza el token en
+  caliente (ver token_estado.py). `POST` valida que sea un JWT no vencido.
 
 ---
 
@@ -205,79 +232,48 @@ commit y lo agrega a `Bitacora_Construccion.txt` con un commit propio.
 
 ## Pendientes concretos
 
-### Fase 4 — hecha (2026-09-10), con una validación pendiente
+Fases 4 y 5 hechas; Fase 6 preparada. Lo que queda es de Juan (verificar en
+pantalla, deployar) o menor.
 
-Se construyó y probó el cerebro analítico:
+### Para cuando Juan pruebe la app (verificacion visual pendiente)
 
-- `ia/recorte.py` achica el crudo de la aerolínea a lo comparable (probado con
-  muestra sintética, ~93% menos). Cada tarifa queda con un `id` estable.
-- `ia/analisis_ia.py` le pasa el recorte a Groq, que elige un `id` por tramo;
-  Python reconstruye la respuesta (la IA **no** copia números de millas). Si la
-  IA falla, cae a la regla "menos millas" y lo avisa con `eleccion_por_ia:false`.
-- `app.py` ya devuelve `mejor` + `analisis` en vez del crudo.
-- Probado de punta a punta con Groq real y el scraper simulado (para no depender
-  del token). Tests en `tests/`: `test_recorte.py` y `test_analisis.py` no usan
-  red (se corren siempre); `test_endpoint.py` pega contra Groq de verdad.
+La app WPF (`MillasApp/`) compila y cada pieza se probo por separado, pero falta
+que Juan confirme en pantalla, con un token vigente cargado desde el boton
+"token":
 
-**Validación hecha (2026-09-10)** con token vigente, búsqueda real AEP-BRC ida y
-vuelta: el recorte resultó fiel (9 y 10 vuelos con millas, ninguno perdido), y la
-IA eligió bien entre las opciones reales en ~1.5s. Dos cosas que salieron de ahí:
+- Que el **calendario** resalte el rango en **violeta** (se corrigio moviendo el
+  estilo a `Application.Resources`; es el segundo intento).
+- Que el **refinamiento por horario** del chat filtre de verdad ("a la manana"
+  trae vuelos de la manana). El filtro y la interpretacion estan probados por
+  separado; falta la corrida real de punta a punta.
+- Que la **ventanita del token** guarde bien un token real.
 
-- **`taxes` resuelto:** son **pesos argentinos enteros** (no centavos) y **por
-  tramo** (no arrastra la vuelta), así que sumar ida + vuelta está bien. Se
-  verificó comparando la búsqueda de solo ida contra la de ida y vuelta: el mismo
-  vuelo cuesta lo mismo en las dos.
-- **Filtro de dominadas (Pareto) implementado** en `ia/recorte.py`: la búsqueda de
-  ida y vuelta repite cada tarifa de ida por cada combinación con la vuelta (mismo
-  vuelo, misma marca, distinto costo). El filtro descarta las que tienen más millas
-  *y* más impuestos que otra del mismo vuelo. Bajó de 119 a 26 opciones reales sin
-  cambiar la elección final. Cubierto en `tests/test_recorte.py`.
+### Fase 6 - deploy en Render (lista para ejecutar)
 
-### Lo que sigue: Fase 5 (Visual Basic)
-
-Guía completa de integración en `docs/fase5_visual_basic.md`: contrato de los
-tres endpoints, las tres formas de respuesta a contemplar, y un cliente VB.NET
-de referencia (`HttpClient` + `System.Text.Json`), **sin compilar** porque acá
-falta el entorno.
-
-El backend ya quedó **listo y probado** para que VB lo consuma: `test_contrato.py`
-cubre validaciones, sin-resultados y API rota; `test_endpoint.py` cubre ida+vuelta
-y solo-ida con Groq real.
-
-Bloqueo del entorno resuelto en el papel: **no hay .NET SDK ni Visual Studio**,
-pero winget ofrece el SDK (hasta .NET 10) y con la CLI `dotnet` alcanza para
-WinForms VB.NET, sin Visual Studio:
-
-```powershell
-winget install Microsoft.DotNet.SDK.10     # LTS; cerrar y reabrir la terminal
-dotnet new winforms -lang VB -o MillasApp
-```
-
-**Decisión pendiente de Juan** antes de armar la GUI: confirmar WinForms y la
-versión del SDK. La GUI no se puede ver ni compilar desde acá, así que ese ciclo
-lo maneja él.
+Todo preparado: `render.yaml` (gunicorn, 1 worker, secretos con `sync:false`),
+`.python-version` (3.12, porque Render no tiene la 3.14 local) y la guia paso a
+paso en `docs/fase6_render.md`. Falta que Juan lo ejecute: conectar el repo como
+Blueprint, cargar `GROQ_API_KEY` y `AEROLINEAS_TOKEN`, y apuntar la app a la URL
+(cambiar `BaseUrl` en `ClienteApi.vb`).
 
 ### Bugs y dudas abiertas
 
-- **Token de Aerolíneas — automatización a medio camino.** Se encontró que sale
-  de `POST https://api.aerolineas.com.ar/v1/auth/token` (no `/v1/token`, que da
-  404), con `client_id` (público, va dentro del JWT) + `client_secret`. Es un JWT
-  anónimo que **dura 24 h exactas**. Está escrito `scrapers/token_aerolineas.py`
-  + `renovar_token.py`, pero **sin probar**: falta que Juan cargue el
-  `client_secret` en `AEROLINEAS_CLIENT_SECRET` (sale del DevTools, pestaña
-  Payload de la llamada `auth/token`). El clasificador de auto-modo bloqueó
-  extraer el secret del JS por mi cuenta, por eso lo carga él. Cuando esté:
-  correr `renovar_token.py`, ver el 200 real, ajustar nombres de campo si hace
-  falta, y recién ahí enganchar el auto-refresh en el scraper (hoy no está en el
-  flujo de `/buscar` porque es código sin probar).
-- **`taxes` viene como entero** (ej. `64022`) y falta determinar si son centavos
-  o pesos enteros. Importa para no mostrarle un número equivocado al usuario.
-- **Render puede no soportar Python 3.14.** Mantener el código compatible con
-  3.11+ y fijar la versión que Render ofrezca al llegar a la Fase 6.
+- **El token no se pudo automatizar** (investigado a fondo el 2026-09-12): no hay
+  `client_secret` accesible en el cliente ni una llamada que entregue el token; lo
+  arma el JS de la web. La unica via seria un navegador headless, descartado por
+  el acuerdo de no usar navegador y porque no entra en Render free. **Decision:
+  queda manual pero comodo** (boton token en la app). `scrapers/token_aerolineas.py`
+  y `renovar_token.py` quedan como codigo muerto.
+- **En Render el token en caliente es efimero**: al dormir/reiniciar el servicio
+  se pierde y vuelve al `AEROLINEAS_TOKEN` de las env vars. Para uso personal
+  alcanza (se recarga desde la app). Documentado en la guia de Fase 6.
 
 ### Ya resueltos
 
-- ✅ **La bitácora truncaba los resúmenes.** Era el `max_tokens: 400` con gpt-oss
-  razonando. Se subió a 1200 y se agregó `reasoning_effort: "low"` en
-  `.github/workflows/autodoc.yml` (2026-09-10). De paso se corrigió el prompt,
-  que decía "backend en Node.js" siendo Python.
+- OK **Fase 4** validada con datos reales (recorte + filtro de dominadas + franja
+  horaria). `taxes`: pesos argentinos enteros, por tramo (sumar ida+vuelta esta bien).
+- OK **Fase 5**: app WPF con buscador, autocompletado de aeropuertos, calendario de
+  rango, chat con IA (entiende, repregunta, refina por horario, guardrails) y token
+  editable desde la app. Compila con `dotnet` (se instalo .NET SDK 10).
+- OK **La bitacora truncaba los resumenes.** `max_tokens: 400` -> 1200 +
+  `reasoning_effort: "low"` en autodoc.yml. Y el prompt decia "Node.js" siendo Python.

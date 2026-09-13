@@ -22,8 +22,8 @@ Backend Python (Flask) en Render         <-- Fases 3 y 6
 - [x] **Fase 2** — Cuentas: Render + Groq, variables de entorno
 - [x] **Fase 3** — Motor de extracción (API de Aerolíneas Argentinas)
 - [x] **Fase 4** — Cerebro analítico (Groq): recorta el JSON y elige el mejor vuelo
-- [ ] **Fase 5** — Interfaz de escritorio en Visual Basic
-- [ ] **Fase 6** — Despliegue en Render con auto-deploy
+- [x] **Fase 5** — App de escritorio (WPF/VB.NET): buscador + chat con IA + calendario
+- [~] **Fase 6** — Despliegue en Render: preparado (`render.yaml`), falta ejecutarlo
 - [ ] **Fase 7** — Escalabilidad: más aerolíneas (Smiles, AA, ...)
 
 ## Stack
