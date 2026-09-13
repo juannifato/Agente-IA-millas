@@ -110,6 +110,34 @@ def main() -> int:
     caso("/aeropuertos -> Buenos Aires trae AEP y EZE",
          {"AEP", "EZE"}.issubset(codigos_bue))
 
+    # --- token: consulta y actualizacion en caliente ---
+    import base64 as _b64
+    import json as _json
+    import time as _time
+
+    import token_estado
+
+    def _jwt(offset_seg):
+        cod = lambda d: _b64.urlsafe_b64encode(_json.dumps(d).encode()).decode().rstrip("=")
+        return f"{cod({'alg': 'RS256'})}.{cod({'exp': int(_time.time()) + offset_seg})}.firma"
+
+    r = cli.get("/token/estado")
+    caso("/token/estado -> 200 con info del token",
+         r.status_code == 200 and "vencido" in r.get_json())
+    r = cli.post("/token", json={"token": "no-es-un-jwt"})
+    caso("POST /token con basura -> 400 token_invalido",
+         r.status_code == 400 and r.get_json()["motivo"] == "token_invalido")
+    r = cli.post("/token", json={"token": _jwt(-3600)})
+    caso("POST /token con JWT vencido -> 400 token_vencido",
+         r.status_code == 400 and r.get_json()["motivo"] == "token_vencido")
+    r = cli.post("/token", json={"token": _jwt(86400)})
+    caso("POST /token con JWT valido -> 200", r.status_code == 200 and r.get_json()["ok"])
+    caso("tras guardar, el token queda vigente",
+         cli.get("/token/estado").get_json()["vencido"] is False)
+    # limpieza: no dejar el token de prueba cargado ni el archivo .token
+    token_estado._token_memoria = None
+    token_estado._ARCHIVO.unlink(missing_ok=True)
+
     # --- errores HTTP: siempre JSON, nunca HTML ---
     r = cli.get("/ruta-que-no-existe")
     caso("404 devuelve JSON con motivo",
